@@ -1,0 +1,12 @@
+{
+  "name": "own",
+  "version": "0.0.1",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "./node_modules/.bin/electron ."
+  },
+  "dependencies": {
+    "electron-prebuilt": "^0.37.8"
+  }
+}
