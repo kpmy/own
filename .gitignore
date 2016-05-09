@@ -34,3 +34,4 @@ node_modules
 *.iml
 *.ipr
 own.iws
+dist
