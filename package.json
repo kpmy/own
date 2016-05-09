@@ -4,9 +4,11 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "./node_modules/.bin/electron ."
+    "start": "electron .",
+    "build": "electron-packager . own --platform=win32 --arch=x64 --version=0.37.8 --app-version=0.0.1 --out=dist --ignore=dist --prune"
   },
   "dependencies": {
-    "electron-prebuilt": "^0.37.8"
+    "electron-prebuilt": "^0.37.8",
+    "jquery": "^2.2.3"
   }
 }
