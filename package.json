@@ -13,6 +13,7 @@
     "jquery": "^2.2.3",
     "require-new": "^1.1.0",
     "should": "^8.3.1",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "xml": "^1.0.1"
   }
 }

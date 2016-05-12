@@ -40,13 +40,18 @@ function Scanner(stream) {
     this.EMPTY = new Sym("EMPTY");
     this.LPAREN = thisSym("(");
     this.SEPARATOR = thisSym(";");
-    this.DELIMITER = thisSym(" ");
+    this.DELIMITER = thisSym("` `");
+    this.IDENT = thisSym("IDENT");
+    this.STR = thisSym("STR");
+    this.NUM = thisSym("NUM");
     
     this["keyTab"] = {
-        "UNIT": thisSym("UNIT")
+        "UNIT": thisSym("UNIT"),
+        "END": thisSym("END")
     };
     this.UNIT = this.keyTab["UNIT"];
-
+    this.END = this.keyTab["END"];
+    
     this["stream"] = stream;
     this["eof"] = false;
     this["pos"] = 0;
@@ -63,7 +68,7 @@ function Scanner(stream) {
         if(c) {
             this.pos++;
             this.ch = c;
-            console.log(c);
+            //console.log(c);
             return c;
         } else {
             should.ok(!this.eof);
