@@ -44,13 +44,17 @@ function Scanner(stream) {
     this.IDENT = thisSym("IDENT");
     this.STR = thisSym("STR");
     this.NUM = thisSym("NUM");
+    this.ASSIGN = thisSym("->");
+    this.MINUS = thisSym("-");
     
     this["keyTab"] = {
         "UNIT": thisSym("UNIT"),
-        "END": thisSym("END")
+        "END": thisSym("END"),
+        "IMPORT": thisSym("IMPORT")
     };
     this.UNIT = this.keyTab["UNIT"];
     this.END = this.keyTab["END"];
+    this.IMPORT = this.keyTab["IMPORT"];
     
     this["stream"] = stream;
     this["eof"] = false;
@@ -60,6 +64,7 @@ function Scanner(stream) {
     this.mark = function () {
         var args = Array.prototype.slice.call(arguments, 0);
         args.push(" at pos "+this.pos);
+        console.log(args.join(""));
         throw new Error(args.join(""));
     };
 
@@ -185,6 +190,14 @@ function Scanner(stream) {
     this._get = function () {
         var sym = null;
         switch (this.ch){
+            case "-":
+                if (this.next() == ">") {
+                    this.next();
+                    sym = this.ASSIGN;
+                } else {
+                    sym = this.MINUS;
+                }
+                break;
             case "(":
                 if (this.next() == "*"){
                     this.comment();

@@ -15,7 +15,6 @@ function readSource(f, fn) {
         "autoClose": true
     }).once("readable", function(){
         fn(this);
-        //fs.closeSync(fd);
     });
 }
 
@@ -33,17 +32,34 @@ function writeTarget(f, fn) {
 
 module.exports = function (f) {
     var mod = null;
+    var root = process.cwd()+"/test";
+    
     readSource(f, function (stream) {
-        var sc = rerequire("./scan.js")(stream);
-        var ps = rerequire("./parse.js")(sc);
+        var ps = rerequire("./parse.js")(rerequire("./scan.js")(stream));
         mod = ps.mod();
         should.exist(mod);
-        var gen = rerequire("./ir/xml.js");
-        writeTarget(mod.name+".ox", gen(mod));
-        var js = rerequire("./transpiler/js.js");
-        writeTarget(mod.name.toLowerCase()+".js", js(mod));
-        setTimeout(function(){
-            rerequire(process.cwd()+"/"+mod.name.toLowerCase()+".js")({});
-        }, 100);
+        console.log(mod);
+        { //definition of module
+            var wr = rerequire("./ir/def.js").writer(mod); 
+            writeTarget(root+"/"+mod.name+".od", wr);
+            var rd = rerequire("./ir/def.js").reader(function (def) {
+                console.log(def);
+            });
+            readSource(root+"/"+mod.name+".od", rd);
+        }
+        { //ast of module
+            var wr = rerequire("./ir/xml.js").writer(mod);
+            writeTarget(root+"/"+mod.name + ".ox", wr);
+            var rd = rerequire("./ir/xml.js").reader(function (mod) {
+                should.exist(mod);
+                //js dump of module
+                var js = rerequire("./transpiler/js.js");
+                writeTarget(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js", js(mod));
+                setTimeout(function () {
+                    rerequire(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js")({});
+                }, 100);
+            });
+            readSource(root+"/"+mod.name + ".ox", rd);
+        }
     });
 };
