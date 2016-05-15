@@ -5,14 +5,17 @@ const should = require("should");
 const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
 
-function Parser(sc) {
+function Parser(sc, resolver) {
     this["pr"] = rerequire("./help.js")(sc);
     this["sc"] = sc;
     this["tgt"] = null;
+    this["resolvers"] = [];
     const p = this; //use with care within closures...
-
+    
     this.resolve = function (name) {
-        return ast.def();
+        var promise = resolver(name);
+        this.resolvers.push(promise);
+        return promise;
     };
 
     this.block = function (b, sym) {
@@ -22,7 +25,7 @@ function Parser(sc) {
                 this.pr.next();
                 for(var stop = false; !stop;){
                     if (this.pr.wait(sc.IDENT, sc.SEPARATOR, sc.DELIMITER)){
-                        var name = this.pr.ident();
+                        const name = this.pr.ident();
                         var alias = "";
                         this.pr.next();
                         if (this.pr.wait(sc.ASSIGN, sc.DELIMITER)){
@@ -39,10 +42,10 @@ function Parser(sc) {
                             imp.name = name;
                             imp.alias = alias;
                             if(!cache.hasOwnProperty(name)){
-                                imp.def = this.resolve(name);
+                                this.resolve(name).then(function (def) {
+                                    cache[name].def = def;
+                                });
                                 cache[name] = imp;
-                            } else {
-                                imp.def = cache[name].def;
                             }
                             const noCycle = function (i) {
                                 i.imports.forEach(function (ii) {
@@ -50,7 +53,7 @@ function Parser(sc) {
                                         p.sc.mark("cyclic import from ", i.name);
                                     } else {
                                         noCycle(ii);
-                                    };
+                                    }
                                 });
                             };
                             noCycle(imp);
@@ -87,13 +90,16 @@ function Parser(sc) {
         if(!_.isEqual(mod, this.pr.ident()))
             this.sc.mark("wrong module name");
         this.pr.next();
-        
-        return this.tgt.result();
+        return new Promise(function (res, rej){
+            Promise.all(p.resolvers).then(function () {
+                res(p.tgt.result());
+            });
+        });
     };
     
     this.pr.next();
 }
 
-module.exports = function (sc) {
-    return new Parser(sc);
+module.exports = function (sc, resolver) {
+    return new Parser(sc, resolver);
 };

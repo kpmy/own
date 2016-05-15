@@ -27,6 +27,7 @@ function Reader(ret, stream) {
             should.ok(_.isEqual("definition", def.key));
             var res = ast.def();
             res = Object.assign(res, def.value);
+            //console.log(res);
             ret(res);
         }));
     }

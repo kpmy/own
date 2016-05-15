@@ -35,6 +35,8 @@ function isNum(ch) {
 }
 
 function Scanner(stream) {
+    const s = this;
+
     this.EOF = new Sym("EOF");
     this.START = new Sym("START"); //dumb sym
     this.EMPTY = new Sym("EMPTY");
@@ -60,10 +62,31 @@ function Scanner(stream) {
     this["eof"] = false;
     this["pos"] = 0;
     this["ch"] = null;
+    this["lines"] = {
+        count: 0,
+        last: 0,
+        crlf: false,
+        line: function () {
+            if (s.ch == '\r'){
+                s.lines.crlf = true;
+            }
+            if((s.lines.crlf && s.ch == '\r') || (!s.lines.crlf && s.ch == '\n')){
+                s.lines.count++;
+                s.lines.last = 1
+            }else if (s.lines.crlf && s.ch == '\n'){
+                s.lines.last--;
+            }
+        }
+    };
+
+    this.thisLine = function () {
+        return [this.lines.count, this.lines.last];
+    };
 
     this.mark = function () {
         var args = Array.prototype.slice.call(arguments, 0);
         args.push(" at pos "+this.pos);
+        args.push(" at line "+this.thisLine());
         console.log(args.join(""));
         throw new Error(args.join(""));
     };
@@ -74,6 +97,11 @@ function Scanner(stream) {
             this.pos++;
             this.ch = c;
             //console.log(c);
+            if (this.ch == '\r' || this.ch == '\n'){
+                this.lines.line();
+            } else {
+                this.lines.last++;
+            }
             return c;
         } else {
             should.ok(!this.eof);
@@ -253,7 +281,7 @@ function Scanner(stream) {
         should.exist(sym);
         return sym;
     };
-
+    this.lines.count++;
     this.next(); //important initial read
 }
 
