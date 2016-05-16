@@ -7,6 +7,8 @@ function Module() {
 }
 Module.prototype.name = null;
 Module.prototype.imports = [];
+Module.prototype.start = [];
+Module.prototype.stop = [];
 
 function Definition() {
     
@@ -31,4 +33,4 @@ module.exports.def = function () {
 
 module.exports.imp = function () {
     return new Import();
-}
+};

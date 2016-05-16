@@ -19,6 +19,7 @@ function Block() {
     }
 }
 Block.prototype.imports = [];
+Block.prototype.stmts = [];
 
 function Target(name) {
     this.mod = ast.mod();

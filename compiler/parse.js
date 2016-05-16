@@ -6,98 +6,157 @@ const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
 
 function Parser(sc, resolver) {
-    this["pr"] = rerequire("./help.js")(sc);
-    this["sc"] = sc;
-    this["tgt"] = null;
-    this["resolvers"] = [];
     const p = this; //use with care within closures...
+
+    p["pr"] = rerequire("./help.js")(sc);
+    p["sc"] = sc;
+    p["tgt"] = null;
+    p["resolvers"] = [];
+
     
-    this.resolve = function (name) {
+    p.resolve = function (name) {
         var promise = resolver(name);
-        this.resolvers.push(promise);
+        p.resolvers.push(promise);
         return promise;
     };
 
-    this.block = function (b, sym) {
-        if(_.isEqual(sym, sc.UNIT)){
-            var cache = {};
-            while(this.pr.wait(sc.IMPORT, sc.SEPARATOR, sc.DELIMITER)){
-                this.pr.next();
-                for(var stop = false; !stop;){
-                    if (this.pr.wait(sc.IDENT, sc.SEPARATOR, sc.DELIMITER)){
-                        const name = this.pr.ident();
-                        var alias = "";
-                        this.pr.next();
-                        if (this.pr.wait(sc.ASSIGN, sc.DELIMITER)){
-                            this.pr.next();
-                            this.pr.expect(sc.IDENT, sc.DELIMITER);
-                            alias = this.pr.ident();
-                            this.pr.next();
-                        }
-                        var imp = ast.imp();
-                        if(!b.hasImport(alias)){
-                            if (_.isEqual(name, this.tgt.mod.name)){
-                                this.sc.mark("module cannot import itself");
-                            }
-                            imp.name = name;
-                            imp.alias = alias;
-                            if(!cache.hasOwnProperty(name)){
-                                this.resolve(name).then(function (def) {
-                                    cache[name].def = def;
-                                });
-                                cache[name] = imp;
-                            }
-                            const noCycle = function (i) {
-                                i.imports.forEach(function (ii) {
-                                    if(_.isEqual(ii.name, p.tgt.mod.name)){
-                                        p.sc.mark("cyclic import from ", i.name);
-                                    } else {
-                                        noCycle(ii);
-                                    }
-                                });
-                            };
-                            noCycle(imp);
-                            b.imports.push(imp);
-                        } else {
-                            this.sc.mark("import already exists ", alias);
-                        }
-                    } else if (Object.keys(cache).length > 0){
-                        stop = true;
-                    } else {
-                        this.sc.mark("nothing to import");
+    p.imp = function (b) {
+        var cache = {};
+        while(p.pr.wait(sc.IMPORT, sc.SEPARATOR, sc.DELIMITER)){
+            p.pr.next();
+            for(var stop = false; !stop;){
+                if (p.pr.wait(sc.IDENT, sc.SEPARATOR, sc.DELIMITER)){
+                    const name = p.pr.ident();
+                    var alias = "";
+                    p.pr.next();
+                    if (p.pr.wait(sc.ASSIGN, sc.DELIMITER)){
+                        p.pr.next();
+                        p.pr.expect(sc.IDENT, sc.DELIMITER);
+                        alias = p.pr.ident();
+                        p.pr.next();
                     }
+                    var imp = ast.imp();
+                    if(!b.hasImport(alias)){
+                        if (_.isEqual(name, p.tgt.mod.name)){
+                            p.sc.mark("module cannot import itself");
+                        }
+                        imp.name = name;
+                        imp.alias = alias;
+                        if(!cache.hasOwnProperty(name)){
+                            p.resolve(name).then(function (def) {
+                                cache[name].def = def;
+                                const noCycle = function (i) {
+                                    i.imports.forEach(function (ii) {
+                                        if(_.isEqual(ii.name, p.tgt.mod.name)){
+                                            p.sc.mark("cyclic import from ", i.name);
+                                        } else {
+                                            noCycle(ii);
+                                        }
+                                    });
+                                };
+                                noCycle(cache[name]);
+                            });
+                            cache[name] = imp;
+                        }
+                        b.imports.push(imp);
+                    } else {
+                        p.sc.mark("import already exists ", alias);
+                    }
+                } else if (Object.keys(cache).length > 0){
+                    stop = true;
+                } else {
+                    p.sc.mark("nothing to import");
                 }
             }
-        } else {
-            this.sc.mark("unexpected block type ", sym.code);
         }
     };
 
-    this.mod = function () {
-        this.pr.expect(sc.UNIT, sc.SEPARATOR, sc.DELIMITER);
-        this.pr.next();
-        this.pr.expect(sc.IDENT, sc.DELIMITER);
-        var mod = this.pr.ident();
-        this.pr.next();
-        this.tgt = rerequire("./target.js")(mod);
-        var block = this.tgt.pushBlock();
-        this.block(block, sc.UNIT);
-        this.tgt.popBlock();
-        this.tgt.mod.imports = block.imports;
-        this.pr.expect(sc.END, sc.SEPARATOR, sc.DELIMITER);
-        this.pr.next();
-        this.pr.expect(sc.IDENT, sc.DELIMITER);
-        if(!_.isEqual(mod, this.pr.ident()))
-            this.sc.mark("wrong module name");
-        this.pr.next();
-        return new Promise(function (res, rej){
+    p.typ = function () {
+        should.ok(p.pr.is(sc.IDENT));
+        p.pr.next();
+    };
+
+    p.stmt = function (b) {
+        b.stmts = [];
+    };
+
+    p.vars = function (b) {
+        should.ok(p.pr.is(sc.VAR));
+        p.pr.next();
+        for(var stop = false; !stop;){
+            if(p.pr.wait(sc.IDENT, sc.DELIMITER, sc.SEPARATOR)){
+                var il = [];
+                for(;;){
+                    var id = p.pr.ident();
+                    il.push(id);
+                    p.pr.next();
+                    if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                        p.pr.next();
+                        p.pr.pass(sc.DELIMITER);
+                    } else {
+                        break;
+                    }
+                }
+                if(p.pr.wait(sc.IDENT, sc.DELIMITER)){
+                    p.typ();
+                } else {
+                    p.sc.mark("type or identifier expected");
+                }
+            } else {
+                stop = true;
+            }
+        }
+    };
+
+    p.block = function (b, sym) {
+        if(_.isEqual(sym, sc.UNIT)){
+            if(p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
+                p.vars(b);
+            }
+            if(p.pr.wait(sc.START, sc.DELIMITER, sc.SEPARATOR)){
+                p.pr.next();
+                p.stmt(b);
+            } else if (!(p.pr.is(sc.STOP) || p.pr.is(sc.END))){
+                p.sc.mark("END expected but ", p.pr.sym.code, " found");
+            }
+            p.tgt.mod.start = b.stmts;
+            if(p.pr.wait(sc.STOP, sc.DELIMITER, sc.SEPARATOR)){
+                p.pr.next();
+                p.stmt(b)
+            }
+            p.tgt.mod.stop = b.stmts;
+        } else {
+            p.sc.mark("unexpected block type ", sym.code);
+        }
+    };
+
+    p.mod = function () {
+        p.pr.expect(sc.UNIT, sc.SEPARATOR, sc.DELIMITER);
+        p.pr.next();
+        p.pr.expect(sc.IDENT, sc.DELIMITER);
+        var mod = p.pr.ident();
+        p.pr.next();
+        p.tgt = rerequire("./target.js")(mod);
+        var block = p.tgt.pushBlock();
+        p.imp(block);
+        p.tgt.mod.imports = block.imports;
+        return new Promise(function (res, rej) {
             Promise.all(p.resolvers).then(function () {
+                p.block(block, sc.UNIT);
+                p.tgt.popBlock();
+                p.pr.expect(sc.END, sc.SEPARATOR, sc.DELIMITER);
+                p.pr.next();
+                p.pr.expect(sc.IDENT, sc.DELIMITER);
+                if(!_.isEqual(mod, p.pr.ident()))
+                    p.sc.mark("wrong module name");
+                p.pr.next();
+            }).then(function () {
                 res(p.tgt.result());
             });
         });
     };
-    
-    this.pr.next();
+
+     p.pr.next();
 }
 
 module.exports = function (sc, resolver) {

@@ -48,15 +48,16 @@ function Scanner(stream) {
     this.NUM = thisSym("NUM");
     this.ASSIGN = thisSym("->");
     this.MINUS = thisSym("-");
+    this.COMMA = thisSym(",");
     
     this["keyTab"] = {
-        "UNIT": thisSym("UNIT"),
-        "END": thisSym("END"),
-        "IMPORT": thisSym("IMPORT")
+        "UNIT": s.UNIT = thisSym("UNIT"),
+        "END": s.END = thisSym("END"),
+        "IMPORT": s.IMPORT = thisSym("IMPORT"),
+        "START": s.START = thisSym("START"),
+        "STOP": s.STOP = thisSym("STOP"),
+        "VAR": s.VAR = thisSym("VAR")
     };
-    this.UNIT = this.keyTab["UNIT"];
-    this.END = this.keyTab["END"];
-    this.IMPORT = this.keyTab["IMPORT"];
     
     this["stream"] = stream;
     this["eof"] = false;
@@ -233,6 +234,10 @@ function Scanner(stream) {
                 } else {
                     sym = this.LPAREN;
                 }
+                break;
+            case ",": 
+                this.next();
+                sym = this.COMMA;
                 break;
             case " ":
             case "\t":
