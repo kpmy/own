@@ -4,6 +4,7 @@
 const should = require("should");
 const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
+const Promise = require("bluebird");
 
 function Parser(sc, resolver) {
     const p = this; //use with care within closures...
@@ -13,7 +14,40 @@ function Parser(sc, resolver) {
     p["tgt"] = null;
     p["resolvers"] = [];
 
-    
+
+    function Expression() {
+        const e = this;
+
+        e.value = null;
+
+        e.factor = function () {
+            if(p.pr.is(sc.NUM)){
+                let n = p.pr.num();
+                e.value = ast.expr().constant(n.type, n.value);
+                p.pr.next();
+            } else {
+                p.sc.mark("invalid expression ", p.pr.sym.code);
+            }
+        };
+
+        e.cpx = function () {
+            e.factor();
+        };
+
+        e.power = function () {
+            e.cpx();
+        };
+
+        e.product = function () {
+            e.power();
+        };
+
+        e.quantum = function () {
+            e.product();
+        };
+
+        e.quantum();
+    }
     p.resolve = function (name) {
         var promise = resolver(name);
         p.resolvers.push(promise);
@@ -76,8 +110,29 @@ function Parser(sc, resolver) {
         p.pr.next();
     };
 
+
+    p.obj = function (b) {
+        should.ok(p.pr.is(sc.IDENT));
+        p.pr.next();
+    };
+
     p.stmt = function (b) {
         b.stmts = [];
+        p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
+        if(p.pr.is(sc.END)){
+            console.log("end");
+            //do nothing, handled in .block
+        } else { //expr -> obj
+            var e = new Expression(b);
+            console.log(e.value);
+            p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
+            p.pr.next();
+            var a = ast.stmt().assign();
+            a.expression = e;
+            p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
+            p.obj(b);
+            b.stmts.push(a);
+        }
     };
 
     p.vars = function (b) {
@@ -116,15 +171,15 @@ function Parser(sc, resolver) {
             if(p.pr.wait(sc.START, sc.DELIMITER, sc.SEPARATOR)){
                 p.pr.next();
                 p.stmt(b);
+                p.tgt.mod.start = b.stmts;
             } else if (!(p.pr.is(sc.STOP) || p.pr.is(sc.END))){
                 p.sc.mark("END expected but ", p.pr.sym.code, " found");
             }
-            p.tgt.mod.start = b.stmts;
             if(p.pr.wait(sc.STOP, sc.DELIMITER, sc.SEPARATOR)){
                 p.pr.next();
-                p.stmt(b)
+                p.stmt(b);
+                p.tgt.mod.stop = b.stmts;
             }
-            p.tgt.mod.stop = b.stmts;
         } else {
             p.sc.mark("unexpected block type ", sym.code);
         }
@@ -152,8 +207,8 @@ function Parser(sc, resolver) {
                 p.pr.next();
             }).then(function () {
                 res(p.tgt.result());
-            });
-        });
+            })//.catch(error => {console.trace(error);});
+        });;
     };
 
      p.pr.next();

@@ -192,7 +192,7 @@ function Scanner(stream) {
             sym = thisSym("NUM");
             sym.value = buf;
             sym.modifier = mbuf;
-            sym.period = hasDot;
+            sym.dot = hasDot;
         } else {
             sym = this.EOF;
         }

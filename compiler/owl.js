@@ -4,6 +4,7 @@
 const fs = require("fs");
 const should = require('should/as-function');
 const _ = require('underscore');
+const Promise = require("bluebird"); //developers promise with trace
 
 function readSource(f) {
     return new Promise(function(fn, no) {
@@ -76,8 +77,5 @@ module.exports = function (f) {
                     readSource(root+"/"+mod.name + ".ox").then(rd);
                 }
             })
-        }).catch(
-        error => {
-            console.trace(error);
-        });
-};
+        })//.catch(error => {console.trace(error);});
+};;
