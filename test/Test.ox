@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<unit name="Test"><import name="Log"/><variable name="x" type="ANY"/><variable name="y" type="ANY"/><variable name="z" type="ANY"/><start><assign><expression><const type="INTEGER">0</const></expression><selector module="Test" name="x"/></assign></start></unit>
