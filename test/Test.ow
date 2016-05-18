@@ -1,6 +1,10 @@
 UNIT Test
-IMPORT Log
-VAR x ANY; y, z ANY
+
+    IMPORT Log
+
+    VAR
+        x, y, z ANY
+
 START
-    0 -> x;
+    0 -> x
 END Test

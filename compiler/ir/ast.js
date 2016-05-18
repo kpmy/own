@@ -1,12 +1,27 @@
 /**
  * Created by petry_000 on 12.05.2016.
  */
+const _ = require('underscore');
+
+function Selector() {
+    
+}
+Selector.prototype.module = null;
+Selector.prototype.name = null;
+Selector.prototype.inside = [];
+
+function Variable() {
+    
+}
+Variable.prototype.name = null;
+Variable.prototype.type = null;
 
 function Module() {
 
 }
 Module.prototype.name = null;
 Module.prototype.imports = [];
+Module.prototype.objects = {};
 Module.prototype.start = [];
 Module.prototype.stop = [];
 
@@ -68,4 +83,20 @@ module.exports.expr = function () {
 
 module.exports.stmt = function () {
     return new Stmt();
+};
+
+module.exports.variable = function () {
+    return new Variable();
+};
+
+module.exports.selector = function () {
+    return new Selector();
+};
+
+module.exports.is = function (o) {
+    return {
+        type: function (t) {
+            return _.isEqual(o.constructor.name, t);
+        }
+    }
 };

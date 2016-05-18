@@ -3,8 +3,10 @@
  */
 const should = require("should");
 const _ = require("underscore");
-const ast = rerequire("./ir/ast.js");
 const Promise = require("bluebird");
+
+const ast = rerequire("./ir/ast.js");
+const types = rerequire("./ir/types.js")();
 
 function Parser(sc, resolver) {
     const p = this; //use with care within closures...
@@ -105,15 +107,27 @@ function Parser(sc, resolver) {
         }
     };
 
-    p.typ = function () {
+    p.typ = function (ft) {
         should.ok(p.pr.is(sc.IDENT));
+        let tid = p.pr.ident();
+        var t = types.find(tid);
         p.pr.next();
+        if (!_.isNull(t)){
+            ft(t);
+        } else {
+            p.sc.mark("type not found ", tid);
+        }
     };
 
 
     p.obj = function (b) {
         should.ok(p.pr.is(sc.IDENT));
+        let id = p.pr.ident();
         p.pr.next();
+        var sel = ast.selector();
+        sel.module = p.tgt.mod.name;
+        sel.name = id;
+        return sel;
     };
 
     p.stmt = function (b) {
@@ -128,9 +142,9 @@ function Parser(sc, resolver) {
             p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
             p.pr.next();
             var a = ast.stmt().assign();
-            a.expression = e;
+            a.expression = e.value;
             p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
-            p.obj(b);
+            a.selector = p.obj(b);
             b.stmts.push(a);
         }
     };
@@ -143,7 +157,11 @@ function Parser(sc, resolver) {
                 var il = [];
                 for(;;){
                     var id = p.pr.ident();
-                    il.push(id);
+                    if(!b.objects.hasOwnProperty(id)) {
+                        il.push(id);
+                    } else {
+                        p.sc.mark("identifiers already exists ", id);
+                    }
                     p.pr.next();
                     if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
                         p.pr.next();
@@ -153,7 +171,16 @@ function Parser(sc, resolver) {
                     }
                 }
                 if(p.pr.wait(sc.IDENT, sc.DELIMITER)){
-                    p.typ();
+                    p.typ(function (t) {
+                        il.forEach(function (v) {
+                            console.log(v);
+                            should.ok(!b.objects.hasOwnProperty(v));
+                            var vr = ast.variable();
+                            vr.name = v;
+                            vr.type = t;
+                            b.objects[v] = vr;
+                        });
+                    });
                 } else {
                     p.sc.mark("type or identifier expected");
                 }
@@ -168,6 +195,7 @@ function Parser(sc, resolver) {
             if(p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
+            p.tgt.mod.objects = b.objects;
             if(p.pr.wait(sc.START, sc.DELIMITER, sc.SEPARATOR)){
                 p.pr.next();
                 p.stmt(b);

@@ -53,7 +53,7 @@ module.exports = function (f) {
             ps.mod().then(
                 mod => {
                 should.exist(mod);
-                console.log(mod);
+                console.dir(mod, {depth: null});
                 { //definition of module
                     var wr = rerequire("./ir/def.js").writer(mod);
                     writeTarget(root+"/"+mod.name+".od").then(wr);
