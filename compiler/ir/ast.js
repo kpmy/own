@@ -2,6 +2,9 @@
  * Created by petry_000 on 12.05.2016.
  */
 const _ = require('underscore');
+const should = require('should');
+
+const types = rerequire("./types.js");
 
 function Selector() {
     
@@ -39,7 +42,10 @@ Import.prototype.def = null;
 Import.prototype.imports = [];
 
 function ConstExpr() {
-    
+    this.setValue = function (v) {
+        should.exist(this.type);
+        this.value = this.type.parse(v);
+    }
 }
 ConstExpr.prototype.type = null;
 ConstExpr.prototype.value = null;
@@ -99,4 +105,8 @@ module.exports.is = function (o) {
             return _.isEqual(o.constructor.name, t);
         }
     }
+};
+
+module.exports.isStatement = function (x) {
+    return (x instanceof Assign);
 };

@@ -22,7 +22,7 @@ function Writer(mod, stream) {
     w.expr2 = function (e, root) {
         if(ast.is(e).type("ConstExpr")){
             var attrs = {type: e.type.name};
-            root.push({"constant": [{_attr: attrs}, e.value.toString()]});
+            root.push({"constant-expression": [{_attr: attrs}, e.value.toString()]});
         } else {
             throw new Error("unexpected expression")
         }
@@ -129,11 +129,53 @@ function Reader(ret, stream) {
                     v.type = t;
                     push(v);
                     break;
+                case "start":
+                    stack.push(function (x) {
+                        should.ok(ast.isStatement(x));
+                        mod.start.push(x);
+                    });
+                    break;
+                case "assign":
+                    var a = ast.stmt().assign();
+                    push(a);
+                    stack.push(function (x) {
+                        if(ast.is(x).type("Selector")){
+                            a.selector = x;
+                        }else if (ast.is(x).type("ConstExpr")){
+                            a.expression = x;
+                        } else {
+                            throw new Error("unknown object of assign " + x.constructor.name + " " + JSON.stringify(x));
+                        }
+                    });
+                    break;
+                case "selector":
+                    var s = ast.selector();
+                    s.module = n.attributes["module"];
+                    s.name = n.attributes["name"];
+                    push(s);
+                    break;
+                case "expression":
+                    //begin of any expression, do nothing
+                    break;
+                case "constant-expression":
+                    var t = types.find(n.attributes["type"]);
+                    should.exist(t);
+                    var e = ast.expr().constant(t);
+                    push(e);
+                    stack.push(function (x) {
+                        e.setValue(x);
+                    });
+                    break;
                 default:
                     throw new Error("unknown tag "+n.name);
             }
         };
-        
+
+        xs.ontext = function (t) {
+            if(!_.isEmpty(stack))
+                push(t);
+        };
+
         xs.onclosetag = function (name) {
             switch (name) {
                 case "unit":
@@ -144,8 +186,15 @@ function Reader(ret, stream) {
                         throw new Error("unexpected unit close tag");
                     }
                     break;
+                case "assign":
+                case "start":
+                case "constant-expression":
+                    stack.pop();
+                    break;
+                case "expression":
                 case "import":
                 case "variable":
+                case "selector":
                     //do nothing
                     break;
                 default:

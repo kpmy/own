@@ -71,7 +71,10 @@ module.exports = function (f) {
                         var js = rerequire("./transpiler/js.js");
                         writeTarget(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js").then(js(mod));
                         setTimeout(function () {
-                            rerequire(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js")({});
+                            const rts = rerequire("./rt/rts.js");
+                            const test = rerequire(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js")(rts);
+                            test.start();
+                            console.dir(test, {depth: null});
                         }, 100);
                     });
                     readSource(root+"/"+mod.name + ".ox").then(rd);
