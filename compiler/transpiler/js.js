@@ -16,12 +16,12 @@ function Builder(mod, st) {
     };
 
     b.variable = function (v) {
-        st.write(`this.${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
+        st.write(`this.$${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
     };
 
     b.sel = function (s) {
         if(_.isEqual(s.module, mod.name)){
-            st.write(`this.${s.name}`);
+            st.write(`this.$${s.name}`);
         } else {
             throw new Error("foreign selector not supported");
         }
@@ -52,8 +52,17 @@ function Builder(mod, st) {
         b.ln(";");
     };
 
+    b.import = function (imp) {
+        st.write(`this.Import${imp.name} = rts.load("${imp.name}");\n`);
+    };
+
     b.build = function () {
-        st.write(`function ${mod.name} (rts){\n`);
+        st.write(`function Module${mod.name} (rts){\n`);
+
+        mod.imports.forEach(function (i) {
+            b.import(i);
+        });
+
         for(v in mod.objects) {
             var o = mod.objects[v];
             if(ast.is(o).type("Variable")){
@@ -64,18 +73,22 @@ function Builder(mod, st) {
             }
         }
         st.write(`this.start = function(){\n`);
-            if(!_.isEmpty(mod.start)){
-                mod.start.forEach(function(s){
-                    b.stmt(s);
-                    b.ln();
-                });
-            }
+
+        st.write(`console.log('dynamic load ${mod.name}'); \n`);
+        
+        if(!_.isEmpty(mod.start)){
+            mod.start.forEach(function(s){
+                b.stmt(s);
+                b.ln();
+            });
+        }
+
         b.ln("};");
+
         b.ln(`};`);
 
         st.write(`module.exports = function(rts){
-            console.log('dynamic load ${mod.name}'); 
-            return new ${mod.name} (rts)};`);
+            return new Module${mod.name} (rts)};`);
     };
 }
 

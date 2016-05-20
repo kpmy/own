@@ -31,6 +31,29 @@ function Value(tn, val) {
 Value.prototype.type = null;
 Value.prototype.value = null;
 
-module.exports.Type = Type;
-module.exports.Obj = Obj;
-module.exports.Value = Value;
+function RTS(pwd) {
+    const rts = this;
+
+    rts.Type = Type;
+    rts.Obj = Obj;
+    rts.Value = Value;
+
+    rts.pwd = pwd;
+    rts.modules = [];
+    rts.modulesCache = {};
+
+    rts.load = function (name) {
+        if(rts.modulesCache.hasOwnProperty(name)){
+            return rts.modulesCache[name];
+        }
+        var mod = rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
+        should.exist(mod);
+        rts.modules.push(mod);
+        rts.modulesCache[name] = mod;
+        mod.start();
+        return mod;
+    }
+}
+module.exports = function (pwd) {
+    return new RTS(pwd)
+};

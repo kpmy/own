@@ -69,11 +69,11 @@ module.exports = function (f) {
                         should.exist(mod);
                         //js dump of module
                         var js = rerequire("./transpiler/js.js");
-                        writeTarget(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js").then(js(mod));
+                        writeTarget(process.cwd() + "/out/" + mod.name + ".js").then(js(mod));
                         setTimeout(function () {
-                            const rts = rerequire("./rt/rts.js");
-                            const test = rerequire(process.cwd() + "/out/" + mod.name.toLowerCase() + ".js")(rts);
-                            test.start();
+                            return; //need no run
+                            const rts = rerequire("./rt/rts.js")(process.cwd()+"/out");
+                            const test = rts.load(mod.name);
                             console.dir(test, {depth: null});
                         }, 100);
                     });
