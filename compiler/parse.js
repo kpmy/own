@@ -23,10 +23,12 @@ function Parser(sc, resolver) {
         e.value = null;
 
         e.factor = function () {
-            if(p.pr.is(sc.NUM)){
+            if(p.pr.is(sc.NUM)) {
                 let n = p.pr.num();
                 e.value = ast.expr().constant(n.type, n.value);
                 p.pr.next();
+            } else if(p.pr.is(sc.IDENT)){
+                p.sc.mark("unhandled call");
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }
@@ -130,23 +132,26 @@ function Parser(sc, resolver) {
         return sel;
     };
 
-    p.stmt = function (b) {
+    p.stmts = function (b) {
         b.stmts = [];
-        p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
-        if(p.pr.is(sc.END)){
-            console.log("end");
-            //do nothing, handled in .block
-        } else { //expr -> obj
-            var e = new Expression(b);
-            console.log(e.value);
-            p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
-            p.pr.next();
-            var a = ast.stmt().assign();
-            a.expression = e.value;
-            p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
-            a.selector = p.obj(b);
-            b.stmts.push(a);
-        }
+        for(var stop = false; !stop;){
+            p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
+            if (p.pr.is(sc.END)) {
+                console.log("end");
+                //do nothing, handled in .block
+                stop = true;
+            } else { //expr -> obj
+                var e = new Expression(b);
+                console.log(e.value);
+                p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
+                p.pr.next();
+                var a = ast.stmt().assign();
+                a.expression = e.value;
+                p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
+                a.selector = p.obj(b);
+                b.stmts.push(a);
+            }
+    }
     };
 
     p.vars = function (b) {
@@ -191,23 +196,39 @@ function Parser(sc, resolver) {
     };
 
     p.block = function (b, sym) {
-        if(_.isEqual(sym, sc.UNIT)){
-            if(p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
+        if(_.isEqual(sym, sc.UNIT)) {
+            if (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
             p.tgt.mod.objects = b.objects;
-            if(p.pr.wait(sc.START, sc.DELIMITER, sc.SEPARATOR)){
+            
+            while (p.pr.wait(sc.BLOCK, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();
-                p.stmt(b);
+                var pb = p.tgt.pushBlock();
+                p.block(pb, sc.BLOCK);
+                p.tgt.popBlock();
+            }
+            
+            if (p.pr.wait(sc.START, sc.DELIMITER, sc.SEPARATOR)) {
+                p.pr.next();
+                p.stmts(b);
                 p.tgt.mod.start = b.stmts;
-            } else if (!(p.pr.is(sc.STOP) || p.pr.is(sc.END))){
+            } else if (!(p.pr.is(sc.STOP) || p.pr.is(sc.END))) {
                 p.sc.mark("END expected but ", p.pr.sym.code, " found");
             }
-            if(p.pr.wait(sc.STOP, sc.DELIMITER, sc.SEPARATOR)){
+            
+            if (p.pr.wait(sc.STOP, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();
-                p.stmt(b);
+                p.stmts(b);
                 p.tgt.mod.stop = b.stmts;
             }
+        } else if (_.isEqual(sym, sc.BLOCK)){
+            p.pr.expect(sc.IDENT, sc.DELIMITER);
+            p.pr.next();
+            p.pr.expect(sc.END, sc.DELIMITER, sc.SEPARATOR);
+            p.pr.next();
+            p.pr.expect(sc.IDENT, sc.DELIMITER);
+            p.pr.next();
         } else {
             p.sc.mark("unexpected block type ", sym.code);
         }

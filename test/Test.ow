@@ -2,9 +2,13 @@ UNIT Test
 
     IMPORT Log
 
-    VAR
-        x, y, z ANY
+    VAR x, y, z ANY
+
+    BLOCK Do
+
+    END Do
 
 START
     0 -> x
+    Do
 END Test

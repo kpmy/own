@@ -56,7 +56,8 @@ function Scanner(stream) {
         "IMPORT": s.IMPORT = thisSym("IMPORT"),
         "START": s.START = thisSym("START"),
         "STOP": s.STOP = thisSym("STOP"),
-        "VAR": s.VAR = thisSym("VAR")
+        "VAR": s.VAR = thisSym("VAR"),
+        "BLOCK": s.BLOCK = thisSym("BLOCK")
     };
     
     this["stream"] = stream;

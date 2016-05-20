@@ -27,7 +27,6 @@ function Value(tn, val) {
     should.exist(v.type);
     v.value = v.type.parse(val);
 }
-
 Value.prototype.type = null;
 Value.prototype.value = null;
 
@@ -54,6 +53,7 @@ function RTS(pwd) {
         return mod;
     }
 }
+
 module.exports = function (pwd) {
     return new RTS(pwd)
 };
