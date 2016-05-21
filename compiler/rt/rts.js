@@ -10,15 +10,13 @@ function Type(tn) {
     t.type = types.find(tn);
     should.exist(t.type);
 }
-Type.prototype.type = null;
 
 function Obj(t) {
     const o = this;
     
     o.type = t;
+    o.value = null;
 }
-Obj.prototype.type = null;
-Obj.prototype.value = null;
 
 function Value(tn, val) {
     const v = this;
@@ -27,8 +25,7 @@ function Value(tn, val) {
     should.exist(v.type);
     v.value = v.type.parse(val);
 }
-Value.prototype.type = null;
-Value.prototype.value = null;
+
 
 function RTS(pwd) {
     const rts = this;

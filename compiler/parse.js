@@ -24,11 +24,13 @@ function Parser(sc, resolver) {
 
         e.factor = function () {
             if(p.pr.is(sc.NUM)) {
-                let n = p.pr.num();
+                var n = p.pr.num();
                 e.value = ast.expr().constant(n.type, n.value);
                 p.pr.next();
             } else if(p.pr.is(sc.IDENT)){
-                p.sc.mark("unhandled call");
+                var id = p.pr.ident();
+                e.value = ast.expr().call(p.tgt.mod.name, id);
+                p.pr.next();
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }
@@ -143,13 +145,23 @@ function Parser(sc, resolver) {
             } else { //expr -> obj
                 var e = new Expression(b);
                 console.log(e.value);
-                p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
-                p.pr.next();
-                var a = ast.stmt().assign();
-                a.expression = e.value;
-                p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
-                a.selector = p.obj(b);
-                b.stmts.push(a);
+                if(ast.is(e.value).type("CallExpr")){
+                    if(!p.pr.wait(sc.ASSIGN, sc.DELIMITER)){
+                        var c = ast.stmt().call();
+                        c.expression = e.value;
+                        b.stmts.push(c);
+                    }
+                } else {
+                    p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);                    
+                }
+                if(p.pr.is(sc.ASSIGN)) {
+                    p.pr.next();
+                    var a = ast.stmt().assign();
+                    a.expression = e.value;
+                    p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
+                    a.selector = p.obj(b);
+                    b.stmts.push(a);
+                }
             }
     }
     };
@@ -206,9 +218,15 @@ function Parser(sc, resolver) {
                 p.pr.next();
                 var pb = p.tgt.pushBlock();
                 p.block(pb, sc.BLOCK);
-                p.tgt.popBlock();
+                pb = p.tgt.popBlock();
+                var block = ast.block();
+                block.objects = pb.objects;
+                block.sequence = pb.stmts;
+                block.name = pb.name;
+                b.blocks.push(block);
             }
-            
+            p.tgt.mod.blocks = b.blocks;
+
             if (p.pr.wait(sc.START, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();
                 p.stmts(b);
@@ -224,10 +242,17 @@ function Parser(sc, resolver) {
             }
         } else if (_.isEqual(sym, sc.BLOCK)){
             p.pr.expect(sc.IDENT, sc.DELIMITER);
+            b.name = p.pr.ident();
             p.pr.next();
+            if(p.pr.wait(sc.BEGIN, sc.DELIMITER, sc.SEPARATOR)){
+                p.pr.next();
+                p.stmts(b);
+            }
             p.pr.expect(sc.END, sc.DELIMITER, sc.SEPARATOR);
             p.pr.next();
             p.pr.expect(sc.IDENT, sc.DELIMITER);
+            if(!_.isEqual(b.name, p.pr.ident()))
+                p.sc.mark("block name expected ", pb.name);
             p.pr.next();
         } else {
             p.sc.mark("unexpected block type ", sym.code);
@@ -239,9 +264,10 @@ function Parser(sc, resolver) {
         p.pr.next();
         p.pr.expect(sc.IDENT, sc.DELIMITER);
         var mod = p.pr.ident();
-        p.pr.next();
         p.tgt = rerequire("./target.js")(mod);
         var block = p.tgt.pushBlock();
+        block.name = mod;
+        p.pr.next();
         p.imp(block);
         p.tgt.mod.imports = block.imports;
         return new Promise(function (res, rej) {

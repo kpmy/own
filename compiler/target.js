@@ -5,6 +5,12 @@ const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
 
 function Block() {
+    this.imports = [];
+    this.stmts = [];
+    this.objects = {};
+    this.name = null;
+    this.blocks = [];
+    
     this.hasImport = function (alias) {
         if (_.isEmpty(alias))
             return false;
@@ -18,9 +24,6 @@ function Block() {
         return ok;
     }
 }
-Block.prototype.imports = [];
-Block.prototype.stmts = [];
-Block.prototype.objects = {};
 
 function Target(name) {
     this.mod = ast.mod();

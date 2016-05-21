@@ -6,11 +6,12 @@ const _ = require('underscore');
 const charfunk = require("charfunk");
 
 function Sym (type) {
+    this.type = "SYM";
+    this.code = null;
+    
     if(type)
         this["type"] = type;
 }
-Sym.prototype.type = "SYM";
-Sym.prototype.code = null;
 
 function thisSym(code) {
     var ret = new Sym();
@@ -57,7 +58,8 @@ function Scanner(stream) {
         "START": s.START = thisSym("START"),
         "STOP": s.STOP = thisSym("STOP"),
         "VAR": s.VAR = thisSym("VAR"),
-        "BLOCK": s.BLOCK = thisSym("BLOCK")
+        "BLOCK": s.BLOCK = thisSym("BLOCK"),
+        "BEGIN": s.BEGIN = thisSym("BEGIN")
     };
     
     this["stream"] = stream;

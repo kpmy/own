@@ -7,13 +7,14 @@ function Type(name, parse) {
     
     if(parse)
         t.parse = parse;
+    else
+        t.parse = function (x) {
+            return x;
+        };
     
     t.name = name;
 }
-Type.prototype.name = null;
-Type.prototype.parse = function (x) {
-    return x;
-};
+
 
 function Types() {
     const t = this;

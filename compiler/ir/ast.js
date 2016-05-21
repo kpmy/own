@@ -7,48 +7,62 @@ const should = require('should');
 const types = rerequire("./types.js");
 
 function Selector() {
-    
+    this.module = null;
+    this.name = null;
+    this.inside = [];
 }
-Selector.prototype.module = null;
-Selector.prototype.name = null;
-Selector.prototype.inside = [];
+
 
 function Variable() {
-    
+    this.name = null;
+    this.type = null;
 }
-Variable.prototype.name = null;
-Variable.prototype.type = null;
+
 
 function Module() {
-
+    this.name = null;
+    this.imports = [];
+    this.objects = {};
+    this.start = [];
+    this.stop = [];
+    this.blocks = [];
 }
-Module.prototype.name = null;
-Module.prototype.imports = [];
-Module.prototype.objects = {};
-Module.prototype.start = [];
-Module.prototype.stop = [];
+
+function Block() {
+    this.name = null;
+    this.sequence = [];
+    this.objects = [];
+}
+
 
 function Definition() {
-    
+    this.name = null;
 }
-Definition.prototype.name = null;
 
 function Import() {
+    this.name = null;
+    this.alias = null;
+    this.def = null;
+    this.imports = [];
     
 }
-Import.prototype.name = null;
-Import.prototype.alias = null;
-Import.prototype.def = null;
-Import.prototype.imports = [];
 
 function ConstExpr() {
+    this.type = null;
+    this.value = null;
+    
     this.setValue = function (v) {
         should.exist(this.type);
         this.value = this.type.parse(v);
     }
 }
-ConstExpr.prototype.type = null;
-ConstExpr.prototype.value = null;
+
+
+function CallExpr() {
+    this.name = null;
+    this.module = null;
+}
+
 
 function Expr() {
     this.constant = function (type, value) {
@@ -56,18 +70,34 @@ function Expr() {
         ret.type = type;
         ret.value = value;
         return ret;
+    };
+
+    this.call = function (module, name) {
+        var ret = new CallExpr();
+        ret.module = module;
+        ret.name = name;
+        return ret;
     }
 }
 
 function Assign() {
-    
+    this.expression = null;
+    this.selector = null;
 }
-Assign.prototype.expression = null;
-Assign.prototype.selector = null;
+
+
+function Call() {
+    this.expression = null;
+}
+
 
 function Stmt() {
     this.assign = function () {
         return new Assign();
+    };
+
+    this.call = function () {
+        return new Call();
     }
 }
 
@@ -97,6 +127,10 @@ module.exports.variable = function () {
 
 module.exports.selector = function () {
     return new Selector();
+};
+
+module.exports.block = function () {
+    return new Block();
 };
 
 module.exports.is = function (o) {

@@ -45,7 +45,7 @@ function Writer(mod, stream) {
             w.sel(s.selector, ass);
             ass.close();
         } else {
-            throw new Error("unexpected statement")
+            throw new Error("unexpected statement "+s.constructor.name);
         }
     };
 

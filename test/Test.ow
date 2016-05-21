@@ -5,7 +5,8 @@ UNIT Test
     VAR x, y, z ANY
 
     BLOCK Do
-
+    BEGIN
+        1 -> y
     END Do
 
 START
