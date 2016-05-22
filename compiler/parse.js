@@ -28,8 +28,16 @@ function Parser(sc, resolver) {
                 e.value = ast.expr().constant(n.type, n.value);
                 p.pr.next();
             } else if(p.pr.is(sc.IDENT)){
-                var id = p.pr.ident();
-                e.value = ast.expr().call(p.tgt.mod.name, id);
+                var obj = p.obj(p.tgt.block());
+                //var id = p.pr.identifier(p.isMod());
+                //var mod = _.isNull(id.module) ? p.tgt.mod.name : id.module;
+                if (ast.is(obj).type("Selector")){
+                    e.value= ast.expr().select(obj);
+                } else if (ast.is(obj).type("CallExpr")) {
+                    e.value = obj
+                } else {
+                    p.sc.mark(`invalid object or call`);
+                }
                 p.pr.next();
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
@@ -66,7 +74,8 @@ function Parser(sc, resolver) {
             p.pr.next();
             for(var stop = false; !stop;){
                 if (p.pr.wait(sc.IDENT, sc.SEPARATOR, sc.DELIMITER)){
-                    const name = p.pr.ident();
+                    should.ok(!p.isMod());
+                    const name = p.pr.identifier().id;
                     var alias = "";
                     p.pr.next();
                     if (p.pr.wait(sc.ASSIGN, sc.DELIMITER)){
@@ -113,7 +122,8 @@ function Parser(sc, resolver) {
 
     p.typ = function (ft) {
         should.ok(p.pr.is(sc.IDENT));
-        let tid = p.pr.ident();
+        should.ok(!p.isMod());
+        let tid = p.pr.identifier().id;
         var t = types.find(tid);
         p.pr.next();
         if (!_.isNull(t)){
@@ -123,15 +133,43 @@ function Parser(sc, resolver) {
         }
     };
 
-
+    p.isMod = function () {
+        should.ok(p.pr.is(sc.IDENT));
+        return p.tgt.isMod(p.pr.sym.value);
+    };
+    
     p.obj = function (b) {
         should.ok(p.pr.is(sc.IDENT));
-        let id = p.pr.ident();
+        const foreign = p.isMod();
+        let id = p.pr.identifier(p.isMod());
         p.pr.next();
         var sel = ast.selector();
-        sel.module = p.tgt.mod.name;
-        sel.name = id;
-        return sel;
+        sel.module = _.isNull(id.module) ? p.tgt.mod.name : id.module;
+        sel.name = id.id;
+        if(p.tgt.isObj(sel.module, sel.name)) {
+            if (!foreign) {
+                if (!p.tgt.block().isModule) {
+                    if (p.tgt.block().objects.hasOwnProperty(sel.name)) {
+                        sel.block = p.tgt.block().name;
+                    } else if (p.tgt.mod.objects.hasOwnProperty(sel.name)) {
+                        //do nothing
+                    } else {
+                        p.sc.mark(`identifier not found ${sel.name}`);
+                    }
+                } else {
+                    if (!p.tgt.mod.objects.hasOwnProperty(sel.name)) {
+                        p.sc.mark(`identifier not found ${sel.name}`);
+                    }
+                }
+            } else {
+                //TODO check for foreign objects
+            }
+            return sel;
+        } else if (p.tgt.isBlock(sel.module, sel.name)){
+            return ast.expr().call(sel.module, sel.name);
+        } else {
+            p.sc.mark(`unknown object ${sel.module} ${sel.name}`);
+        }
     };
 
     p.stmts = function (b) {
@@ -160,6 +198,7 @@ function Parser(sc, resolver) {
                     a.expression = e.value;
                     p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
                     a.selector = p.obj(b);
+                    should.ok(ast.is(a.selector).type("Selector"));
                     b.stmts.push(a);
                 }
             }
@@ -173,7 +212,8 @@ function Parser(sc, resolver) {
             if(p.pr.wait(sc.IDENT, sc.DELIMITER, sc.SEPARATOR)){
                 var il = [];
                 for(;;){
-                    var id = p.pr.ident();
+                    should.ok(!p.isMod());
+                    var id = p.pr.identifier().id;
                     if(!b.objects.hasOwnProperty(id)) {
                         il.push(id);
                     } else {
@@ -242,8 +282,17 @@ function Parser(sc, resolver) {
             }
         } else if (_.isEqual(sym, sc.BLOCK)){
             p.pr.expect(sc.IDENT, sc.DELIMITER);
-            b.name = p.pr.ident();
+            should.ok(!p.isMod());
+            var name = p.pr.identifier().id;
+            if(p.tgt.isBlock(p.tgt.mod.name, name))
+                p.sc.mark(`identifier already exists ${name}`);
+
+            b.name = name;
             p.pr.next();
+            if (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
+                p.vars(b);
+            }
+
             if(p.pr.wait(sc.BEGIN, sc.DELIMITER, sc.SEPARATOR)){
                 p.pr.next();
                 p.stmts(b);
@@ -251,7 +300,8 @@ function Parser(sc, resolver) {
             p.pr.expect(sc.END, sc.DELIMITER, sc.SEPARATOR);
             p.pr.next();
             p.pr.expect(sc.IDENT, sc.DELIMITER);
-            if(!_.isEqual(b.name, p.pr.ident()))
+            should.ok(!p.isMod());
+            if(!_.isEqual(b.name, p.pr.identifier().id))
                 p.sc.mark("block name expected ", pb.name);
             p.pr.next();
         } else {
@@ -263,9 +313,10 @@ function Parser(sc, resolver) {
         p.pr.expect(sc.UNIT, sc.SEPARATOR, sc.DELIMITER);
         p.pr.next();
         p.pr.expect(sc.IDENT, sc.DELIMITER);
-        var mod = p.pr.ident();
+        var mod = p.pr.identifier().id;
         p.tgt = rerequire("./target.js")(mod);
         var block = p.tgt.pushBlock();
+        block.isModule = true;
         block.name = mod;
         p.pr.next();
         p.imp(block);
@@ -277,7 +328,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.END, sc.SEPARATOR, sc.DELIMITER);
                 p.pr.next();
                 p.pr.expect(sc.IDENT, sc.DELIMITER);
-                if(!_.isEqual(mod, p.pr.ident()))
+                if(!_.isEqual(mod, p.pr.identifier().id))
                     p.sc.mark("wrong module name");
                 p.pr.next();
             }).then(function () {

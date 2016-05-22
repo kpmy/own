@@ -79,9 +79,18 @@ function Helper(sc) {
         }
     };
 
-    this.ident = function () {
+    this.identifier = function (withMod) {
         should.ok(this.is(sc.IDENT));
-        return this.sym.value;
+        if(withMod){
+            var mod = this.sym.value;
+            h.next();
+            h.expect(sc.DOT);
+            h.next();
+            h.expect(sc.IDENT);
+            return {module: mod, id: this.sym.value};
+        } else {
+            return {module: null, id: this.sym.value};
+        }
     };
 
     h.num = function () {

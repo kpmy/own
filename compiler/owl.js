@@ -71,10 +71,10 @@ module.exports = function (f) {
                         var js = rerequire("./transpiler/js.js");
                         writeTarget(process.cwd() + "/out/" + mod.name + ".js").then(js(mod));
                         setTimeout(function () {
-                            return; //need no run
+                            //return; //need no run
                             const rts = rerequire("./rt/rts.js")(process.cwd()+"/out");
                             const test = rts.load(mod.name);
-                            console.dir(test, {depth: null});
+                            rts.dump();
                         }, 100);
                     });
                     readSource(root+"/"+mod.name + ".ox").then(rd);

@@ -8,16 +8,15 @@ const types = rerequire("./types.js");
 
 function Selector() {
     this.module = null;
+    this.block = null;
     this.name = null;
     this.inside = [];
 }
-
 
 function Variable() {
     this.name = null;
     this.type = null;
 }
-
 
 function Module() {
     this.name = null;
@@ -34,7 +33,6 @@ function Block() {
     this.objects = [];
 }
 
-
 function Definition() {
     this.name = null;
 }
@@ -44,7 +42,6 @@ function Import() {
     this.alias = null;
     this.def = null;
     this.imports = [];
-    
 }
 
 function ConstExpr() {
@@ -57,12 +54,14 @@ function ConstExpr() {
     }
 }
 
-
 function CallExpr() {
     this.name = null;
     this.module = null;
 }
 
+function SelectExpr() {
+    this.selector = null;
+}
 
 function Expr() {
     this.constant = function (type, value) {
@@ -77,6 +76,12 @@ function Expr() {
         ret.module = module;
         ret.name = name;
         return ret;
+    };
+    
+    this.select = function (sel) {
+        var ret = new SelectExpr();
+        ret.selector = sel;
+        return ret;
     }
 }
 
@@ -85,11 +90,9 @@ function Assign() {
     this.selector = null;
 }
 
-
 function Call() {
     this.expression = null;
 }
-
 
 function Stmt() {
     this.assign = function () {
@@ -142,5 +145,5 @@ module.exports.is = function (o) {
 };
 
 module.exports.isStatement = function (x) {
-    return (x instanceof Assign);
+    return (x instanceof Assign) || (x instanceof Call);
 };

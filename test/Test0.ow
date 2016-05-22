@@ -1,0 +1,11 @@
+UNIT Test0
+    IMPORT Log
+
+    VAR
+        i, j INTEGER
+
+     BLOCK Do
+     BEGIN
+        1 -> j
+     END Do
+END Test0

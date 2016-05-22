@@ -13,18 +13,30 @@ function Writer(mod, stream) {
     const w = this;
 
     w.sel = function (s, root) {
-        root.push({"selector": {_attr: {
+        var attrs = {
             "module": s.module,
             "name": s.name
-        }}});
+        };
+        if(!_.isNull(s.block)){
+            attrs.block = s.block;
+        }
+        root.push({"selector": {_attr: attrs}});
     };
 
     w.expr2 = function (e, root) {
-        if(ast.is(e).type("ConstExpr")){
-            var attrs = {type: e.type.name};
+        if(ast.is(e).type("ConstExpr")) {
+            var attrs = {"type": e.type.name};
             root.push({"constant-expression": [{_attr: attrs}, e.value.toString()]});
+        } else if (ast.is(e).type("CallExpr")) {
+            var attrs = {"module": e.module, "name": e.name};
+            root.push({"call-expression": {_attr: attrs}});
+        } else if (ast.is(e).type("SelectExpr")){
+            var sel = xml.element();
+            root.push({"select-expression": sel});
+            w.sel(e.selector, sel);
+            sel.close();
         } else {
-            throw new Error("unexpected expression")
+            throw new Error("unexpected expression " + e.constructor.name);
         }
     };
 
@@ -38,14 +50,28 @@ function Writer(mod, stream) {
     };
 
     w.stmt = function (s, root) {
-        if(ast.is(s).type("Assign")){
+        if(ast.is(s).type("Assign")) {
             var ass = xml.element();
             root.push({"assign": ass});
             w.expr(s.expression, "expression", ass);
             w.sel(s.selector, ass);
             ass.close();
+        } else if(ast.is(s).type("Call")) {
+            var call = xml.element();
+            root.push({"call": call});
+            w.expr(s.expression, "expression", call);
+            call.close();
         } else {
             throw new Error("unexpected statement "+s.constructor.name);
+        }
+    };
+
+    w.variable = function (o, root) {
+        if(ast.is(o).type("Variable")){
+            const attrs = {name: o.name, type: o.type.name};
+            root.push({"variable": {_attr: attrs}});
+        } else {
+            throw new Error("unexpected object " + o.constructor.name + " " + JSON.stringify(o));
         }
     };
 
@@ -65,13 +91,24 @@ function Writer(mod, stream) {
         });
         for(var v in mod.objects){
             let o = mod.objects[v];
-            if(ast.is(o).type("Variable")){
-                const attrs = {name: o.name, type: o.type.name};
-                unit.push({"variable": {_attr: attrs}});
-            } else {
-                throw new Error("unexpected object " + o.constructor.name + " " + JSON.stringify(o));
-            }
+            w.variable(o, unit);
         }
+        mod.blocks.forEach(function (b) {
+            var attrs = {"name": b.name};
+            var block = xml.element({_attr: attrs});
+            unit.push({"block": block});
+            for(var v in b.objects){
+                let o = b.objects[v];
+                w.variable(o, block);
+            }
+            var sequence = xml.element();
+            block.push({"sequence": sequence});
+            b.sequence.forEach(function (s) {
+                w.stmt(s, sequence);
+            });
+            sequence.close();
+            block.close();
+        });
         if(!_.isEmpty(mod.start)){
             var start = xml.element();
             unit.push({"start": start});
@@ -103,8 +140,10 @@ function Reader(ret, stream) {
                         stack.push(function (x) {
                             if(ast.is(x).type("Import")) {
                                 mod.imports.push(x);
-                            } else if (ast.is(x).type("Variable")){
+                            } else if (ast.is(x).type("Variable")) {
                                 mod.objects[x.name] = x;
+                            } else if (ast.is(x).type("Block")){
+                                mod.blocks.push(x);
                             } else {
                                     throw new Error("unknown object " + x.constructor.name + " " + JSON.stringify(x));
                             }
@@ -112,6 +151,20 @@ function Reader(ret, stream) {
                     } else {
                         throw Error("unexpected unit tag");
                     }
+                    break;
+                case "block":
+                    var block = ast.block();
+                    block.name = n.attributes["name"];
+                    push(block);
+                    stack.push(function (x) {
+                        if (ast.is(x).type("Variable")) {
+                            block.objects[x.name] = x;
+                        } else if (ast.isStatement(x)){
+                            block.sequence.push(x);
+                        } else {
+                            throw new Error("unknown object " + x.constructor.name + " " + JSON.stringify(x));
+                        }
+                    });
                     break;
                 case "import":
                     var imp = ast.imp();
@@ -135,16 +188,36 @@ function Reader(ret, stream) {
                         mod.start.push(x);
                     });
                     break;
+                case "sequence":
+                    const oldPush = _.last(stack);
+                    stack.push(function (x) {
+                        should.ok(ast.isStatement(x));
+                        oldPush(x);
+                    });
+                    break;
                 case "assign":
                     var a = ast.stmt().assign();
                     push(a);
                     stack.push(function (x) {
                         if(ast.is(x).type("Selector")){
                             a.selector = x;
-                        }else if (ast.is(x).type("ConstExpr")){
+                        }else if (ast.is(x).type("ConstExpr")) {
+                            a.expression = x;
+                        }else if (ast.is(x).type("SelectExpr")){
                             a.expression = x;
                         } else {
                             throw new Error("unknown object of assign " + x.constructor.name + " " + JSON.stringify(x));
+                        }
+                    });
+                    break;
+                case "call":
+                    var c = ast.stmt().call();
+                    push(c);
+                    stack.push(function (x) {
+                        if(ast.is(x).type("CallExpr")){
+                            c.expression = x;
+                        } else {
+                            throw new Error("unknown object of call " + x.constructor.name + " " + JSON.stringify(x));
                         }
                     });
                     break;
@@ -152,6 +225,7 @@ function Reader(ret, stream) {
                     var s = ast.selector();
                     s.module = n.attributes["module"];
                     s.name = n.attributes["name"];
+                    s.block = n.attributes.hasOwnProperty("block") ? n.attributes["block"] : null;
                     push(s);
                     break;
                 case "expression":
@@ -164,6 +238,21 @@ function Reader(ret, stream) {
                     push(e);
                     stack.push(function (x) {
                         e.setValue(x);
+                    });
+                    break;
+                case "call-expression":
+                    var e = ast.expr().call(n.attributes["module"], n.attributes["name"]);
+                    push(e);
+                    break;
+                case "select-expression":
+                    var e = ast.expr().select();
+                    push(e);
+                    stack.push(function (x) {
+                        if(ast.is(x).type("Selector")){
+                            e.selector = x;
+                        } else {
+                            throw new Error("unknown object for select-expression " + x.constructor.name + JSON.stringify(x));
+                        }
                     });
                     break;
                 default:
@@ -189,9 +278,14 @@ function Reader(ret, stream) {
                 case "assign":
                 case "start":
                 case "constant-expression":
+                case "call":
+                case "sequence":
+                case "block":
+                case "select-expression":
                     stack.pop();
                     break;
                 case "expression":
+                case "call-expression":
                 case "import":
                 case "variable":
                 case "selector":

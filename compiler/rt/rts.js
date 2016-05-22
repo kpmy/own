@@ -11,11 +11,26 @@ function Type(tn) {
     should.exist(t.type);
 }
 
+function defaultValue(t) {
+    var ret = null;
+    switch (t.name){
+        case "INTEGER":
+            ret = 0;
+            break;
+        case "ANY":
+            ret = null;
+            break;
+        default:
+            throw new Error(`unknown default value for type ${t.name}`);
+    }
+    return ret;
+}
+
 function Obj(t) {
     const o = this;
     
     o.type = t;
-    o.value = null;
+    o.value = defaultValue(t.type);
 }
 
 function Value(tn, val) {
@@ -42,13 +57,26 @@ function RTS(pwd) {
         if(rts.modulesCache.hasOwnProperty(name)){
             return rts.modulesCache[name];
         }
+        console.log(`load ${name}`);
         var mod = rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
         should.exist(mod);
         rts.modules.push(mod);
         rts.modulesCache[name] = mod;
         mod.start();
         return mod;
-    }
+    };
+
+    rts.dump = function () {
+        rts.modules.forEach(m => {
+            console.dir(m, {depth: null});
+        })
+    };
+    
+    rts.copyOf = function (v) {
+        var ret = new Value(v.type.name);
+        ret.value = v.value;
+        return ret;
+    };
 }
 
 module.exports = function (pwd) {

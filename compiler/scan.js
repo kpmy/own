@@ -50,6 +50,7 @@ function Scanner(stream) {
     this.ASSIGN = thisSym("->");
     this.MINUS = thisSym("-");
     this.COMMA = thisSym(",");
+    this.DOT = thisSym(".");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -241,6 +242,10 @@ function Scanner(stream) {
             case ",": 
                 this.next();
                 sym = this.COMMA;
+                break;
+            case ".":
+                this.next();
+                sym = this.DOT;
                 break;
             case " ":
             case "\t":

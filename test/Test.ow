@@ -1,15 +1,23 @@
 UNIT Test
 
-    IMPORT Log
+    IMPORT Log Test0
 
-    VAR x, y, z ANY
+    VAR w, x, y, z ANY
 
     BLOCK Do
+        VAR i, j, k ANY
     BEGIN
         1 -> y
+        10 -> i
+        Test0.Do
+        Test0.j -> j
+        j -> k
     END Do
 
 START
-    0 -> x
+    1984 -> x
     Do
+    1 -> Test0.i
+    x -> z
+    Test0.j -> w
 END Test
