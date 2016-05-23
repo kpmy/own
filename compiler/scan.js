@@ -60,7 +60,10 @@ function Scanner(stream) {
         "STOP": s.STOP = thisSym("STOP"),
         "VAR": s.VAR = thisSym("VAR"),
         "BLOCK": s.BLOCK = thisSym("BLOCK"),
-        "BEGIN": s.BEGIN = thisSym("BEGIN")
+        "BEGIN": s.BEGIN = thisSym("BEGIN"),
+        "NONE": s.NONE = thisSym("NONE"),
+        "TRUE": s.TRUE = thisSym("TRUE"),
+        "FALSE": s.FALSE = thisSym("FALSE")
     };
     
     this["stream"] = stream;
@@ -90,12 +93,22 @@ function Scanner(stream) {
 
     this.mark = function () {
         var args = Array.prototype.slice.call(arguments, 0);
-        args.push(" at pos "+this.pos);
-        args.push(" at line "+this.thisLine());
+        args.push(" at pos "+s.pos);
+        args.push(" at line "+s.thisLine());
         console.log(args.join(""));
         throw new Error(args.join(""));
     };
 
+    this.futureMark = function () {
+        var args = Array.prototype.slice.call(arguments, 0);
+        args.push(" at pos "+s.pos);
+        args.push(" at line "+s.thisLine());
+        return function () {
+            console.log(args.join(""));
+            throw new Error(args.join(""));
+        }
+    };
+    
     this.next = function () {
         var c = this.stream.read(1);
         if(c) {

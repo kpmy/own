@@ -14,10 +14,24 @@ UNIT Test
         j -> k
     END Do
 
+    BLOCK Do0
+        VAR a ANY; i INTEGER; b BOOLEAN;
+    BEGIN
+        NONE -> a
+        1945 -> i
+        TRUE -> b
+        NONE -> z
+        Do1
+    END Do0
+
+    BLOCK Do1
+    END Do1
+
 START
     1984 -> x
     Do
     1 -> Test0.i
     x -> z
     Test0.j -> w
+    Do0
 END Test

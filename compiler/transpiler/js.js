@@ -48,7 +48,11 @@ function Builder(mod, st) {
     b.expr = function (e) {
         st.write("(");
         if(ast.is(e).type("ConstExpr")) {
-            st.write(`new rts.Value("${e.type.name}", ${e.value})`);
+            var v = e.value;
+            if(_.isEqual(e.type.name, "ANY") && _.isEqual(v, "NONE")){
+                v = "global.NONE";
+            }
+            st.write(`new rts.Value("${e.type.name}", ${v})`);
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
             if (!_.isEqual(mod.name, e.module))
@@ -104,6 +108,7 @@ function Builder(mod, st) {
     b.build = function () {
         st.write(`function Unit${mod.name} (rts){\n`);
         st.write(`const mod = this;`);
+        b.ln();
         mod.imports.forEach(function (i) {
             b.import(i);
         });
@@ -119,8 +124,9 @@ function Builder(mod, st) {
         }
 
         mod.blocks.forEach(function (block) {
+            b.ln();
             b.block(block);
-            st.write(`;\n`);
+            b.ln(`;`);
         });
 
         st.write(`mod.start = function(){\n`);

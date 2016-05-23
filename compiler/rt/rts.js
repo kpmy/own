@@ -20,6 +20,9 @@ function defaultValue(t) {
         case "ANY":
             ret = null;
             break;
+        case "BOOLEAN":
+            ret = false;
+            break;
         default:
             throw new Error(`unknown default value for type ${t.name}`);
     }
@@ -38,7 +41,8 @@ function Value(tn, val) {
     
     v.type = types.find(tn);
     should.exist(v.type);
-    v.value = v.type.parse(val);
+    if(val)
+        v.value = v.type.parse(val);
 }
 
 

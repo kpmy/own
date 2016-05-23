@@ -3,6 +3,7 @@
  */
 const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
+const Promise = require("bluebird");
 
 function Block() {
     this.imports = [];
@@ -27,14 +28,16 @@ function Block() {
     this.isModule = false;
 }
 
-function Target(name) {
+function Target(name, sc) {
+    const t = this;
     this.mod = ast.mod();
     this.mod.name = name;
     this._bstack = [];
-
-    this.isMod = function (id) {
+    this._resolvers = [];
+    
+    t.isMod = function (id) {
         var ok = false;
-        this.mod.imports.forEach(function (i) {
+        t.mod.imports.forEach(function (i) {
             if (_.isEqual(i.alias, id) || (_.isEmpty(i.alias) && _.isEqual(i.name, id))){
                 ok = true;
             }
@@ -42,23 +45,23 @@ function Target(name) {
         return ok;
     };
 
-    this.isObj = function (mod, name) {
-        if(_.isEqual(mod, this.mod.name)){
-            if(this.block().isModule) {
-                return this.mod.objects.hasOwnProperty(name);
+    t.isObj = function (mod, name) {
+        if(_.isEqual(mod, t.mod.name)){
+            if(t.block().isModule) {
+                return t.mod.objects.hasOwnProperty(name);
             } else {
-                var local = this.block().objects.hasOwnProperty(name);
-                return local || this.mod.objects.hasOwnProperty(name);
+                var local = t.block().objects.hasOwnProperty(name);
+                return local || t.mod.objects.hasOwnProperty(name);
             }
         } else {
             return !_.isEqual(name, "Do"); //TODO fix this crap
         }
     };
     
-    this.isBlock = function (mod, name) {
-        if(_.isEqual(mod, this.mod.name)){
+    t.isBlock = function (mod, name) {
+        if(_.isEqual(mod, t.mod.name)){
             var ret = false;
-            this.mod.blocks.forEach(function (b) {
+            t.mod.blocks.forEach(function (b) {
                 if (_.isEqual(b.name, name)){
                     ret = true;
                 }
@@ -88,6 +91,6 @@ function Target(name) {
     }
 }
 
-module.exports = function (name) {
-    return new Target(name);
+module.exports = function (name, sc) {
+    return new Target(name, sc);
 };

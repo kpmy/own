@@ -27,17 +27,36 @@ function Parser(sc, resolver) {
                 var n = p.pr.num();
                 e.value = ast.expr().constant(n.type, n.value);
                 p.pr.next();
-            } else if(p.pr.is(sc.IDENT)){
+            } else if(p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
                 //var id = p.pr.identifier(p.isMod());
                 //var mod = _.isNull(id.module) ? p.tgt.mod.name : id.module;
-                if (ast.is(obj).type("Selector")){
-                    e.value= ast.expr().select(obj);
+                if (ast.is(obj).type("Selector")) {
+                    e.value = ast.expr().select(obj);
                 } else if (ast.is(obj).type("CallExpr")) {
+                    var exists = p.tgt.isBlock(obj.module, obj.name);
+                    console.log(obj.module, obj.name, exists);
+                    if (!exists){
+                        var mark = sc.futureMark(`block ${obj.name} not found`);
+                        var f = function (res, rej){
+                            if(p.tgt.isBlock(obj.module, obj.name)){
+                                res();
+                            } else {
+                                mark();
+                            }
+                        };
+                        p.tgt._resolvers.push(f);
+                    }
                     e.value = obj
                 } else {
                     p.sc.mark(`invalid object or call`);
                 }
+                p.pr.next();
+            } else if(p.pr.is(sc.TRUE) || p.pr.is(sc.FALSE)) {
+                e.value = ast.expr().constant(types.BOOLEAN, p.pr.is(sc.TRUE));
+                p.pr.next();
+            } else if(p.pr.is(sc.NONE)){
+                e.value = ast.expr().constant(types.ANY, "NONE");
                 p.pr.next();
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
@@ -165,10 +184,8 @@ function Parser(sc, resolver) {
                 //TODO check for foreign objects
             }
             return sel;
-        } else if (p.tgt.isBlock(sel.module, sel.name)){
-            return ast.expr().call(sel.module, sel.name);
         } else {
-            p.sc.mark(`unknown object ${sel.module} ${sel.name}`);
+            return ast.expr().call(sel.module, sel.name);
         }
     };
 
@@ -199,6 +216,7 @@ function Parser(sc, resolver) {
                     p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
                     a.selector = p.obj(b);
                     should.ok(ast.is(a.selector).type("Selector"));
+                    //TODO проверить типы слева и справа
                     b.stmts.push(a);
                 }
             }
@@ -314,7 +332,7 @@ function Parser(sc, resolver) {
         p.pr.next();
         p.pr.expect(sc.IDENT, sc.DELIMITER);
         var mod = p.pr.identifier().id;
-        p.tgt = rerequire("./target.js")(mod);
+        p.tgt = rerequire("./target.js")(mod, p.sc);
         var block = p.tgt.pushBlock();
         block.isModule = true;
         block.name = mod;
@@ -332,7 +350,13 @@ function Parser(sc, resolver) {
                     p.sc.mark("wrong module name");
                 p.pr.next();
             }).then(function () {
-                res(p.tgt.result());
+                var pr = [];
+                p.tgt._resolvers.forEach((f) => {
+                    pr.push(new Promise(f));
+                });
+                Promise.all(pr).then(function () {
+                    res(p.tgt.result());
+                });
             })//.catch(error => {console.trace(error);});
         });;
     };
