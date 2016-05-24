@@ -54,9 +54,22 @@ function ConstExpr() {
     }
 }
 
+function Param(e) {
+    this.expression = e;
+}
+
+function FormalParam() {
+    
+}
+
 function CallExpr() {
     this.name = null;
     this.module = null;
+    this.params = [];
+    
+    this.param = function (e) {
+        return new Param(e);
+    }
 }
 
 function SelectExpr() {
@@ -136,6 +149,10 @@ module.exports.block = function () {
     return new Block();
 };
 
+module.exports.formal = function () {
+    return new FormalParam();
+};
+
 module.exports.is = function (o) {
     return {
         type: function (t) {
@@ -146,4 +163,8 @@ module.exports.is = function (o) {
 
 module.exports.isStatement = function (x) {
     return (x instanceof Assign) || (x instanceof Call);
+};
+
+module.exports.isExpression = function (x) {
+    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr);
 };

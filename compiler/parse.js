@@ -35,7 +35,6 @@ function Parser(sc, resolver) {
                     e.value = ast.expr().select(obj);
                 } else if (ast.is(obj).type("CallExpr")) {
                     var exists = p.tgt.isBlock(obj.module, obj.name);
-                    console.log(obj.module, obj.name, exists);
                     if (!exists){
                         var mark = sc.futureMark(`block ${obj.name} not found`);
                         var f = function (res, rej){
@@ -51,7 +50,7 @@ function Parser(sc, resolver) {
                 } else {
                     p.sc.mark(`invalid object or call`);
                 }
-                p.pr.next();
+                //p.pr.next();
             } else if(p.pr.is(sc.TRUE) || p.pr.is(sc.FALSE)) {
                 e.value = ast.expr().constant(types.BOOLEAN, p.pr.is(sc.TRUE));
                 p.pr.next();
@@ -79,8 +78,10 @@ function Parser(sc, resolver) {
             e.product();
         };
 
+        p.pr.pass(sc.DELIMITER);
         e.quantum();
     }
+
     p.resolve = function (name) {
         var promise = resolver(name);
         p.resolvers.push(promise);
@@ -165,6 +166,24 @@ function Parser(sc, resolver) {
         var sel = ast.selector();
         sel.module = _.isNull(id.module) ? p.tgt.mod.name : id.module;
         sel.name = id.id;
+        if(p.pr.wait(sc.LBRAK, sc.DELIMITER)){
+            p.pr.next();
+            for(var stop = false;!stop;){
+                var e = new Expression(b);
+                if(!ast.is(e.value).type("CallExpr")){
+                    sel.inside.push(e.value);
+                } else {
+                    p.sc.mark("wrong expr")
+                }
+                if(p.pr.wait(sc.COMMA, sc.DELIMITER, sc.SEPARATOR)){
+                    p.pr.next();
+                } else {
+                    stop = true;
+                }
+            }
+            p.pr.expect(sc.RBRAK, sc.DELIMITER);
+            p.pr.next();
+        }
         if(p.tgt.isObj(sel.module, sel.name)) {
             if (!foreign) {
                 if (!p.tgt.block().isModule) {
@@ -185,7 +204,11 @@ function Parser(sc, resolver) {
             }
             return sel;
         } else {
-            return ast.expr().call(sel.module, sel.name);
+            var call = ast.expr().call(sel.module, sel.name);
+            sel.inside.forEach(x => {
+                call.params.push(call.param(x));
+            });
+            return call;
         }
     };
 
@@ -205,6 +228,8 @@ function Parser(sc, resolver) {
                         var c = ast.stmt().call();
                         c.expression = e.value;
                         b.stmts.push(c);
+                    } else {
+                        p.sc.mark("not an expression");
                     }
                 } else {
                     p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);                    
@@ -310,7 +335,29 @@ function Parser(sc, resolver) {
             if (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
-
+            if(p.pr.wait(sc.PAR, sc.DELIMITER, sc.SEPARATOR)){
+                if(Object.keys(b.objects).length == 0){
+                    p.sc.mark("nothing in parameters");
+                }
+                p.pr.next();
+                for(var stop = false; !stop;){
+                    p.pr.expect(sc.IDENT, sc.DELIMITER);
+                    var id = p.pr.identifier();
+                    p.pr.next();
+                    if(!b.objects.hasOwnProperty(id.id)){
+                        p.sc.mark("unknown param");
+                    }
+                    if(_.isObject(b.objects[id.id].param)){
+                        p.sc.mark("duplicate param")
+                    }
+                    b.objects[id.id].param = ast.formal();
+                    if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                        p.pr.next();
+                    } else {
+                        stop = true;
+                    }
+                }
+            }
             if(p.pr.wait(sc.BEGIN, sc.DELIMITER, sc.SEPARATOR)){
                 p.pr.next();
                 p.stmts(b);

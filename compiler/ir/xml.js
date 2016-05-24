@@ -23,13 +23,25 @@ function Writer(mod, stream) {
         root.push({"selector": {_attr: attrs}});
     };
 
+    w.param = function (p, root) {
+        var param = xml.element();
+        root.push({"parameter": param});
+        w.expr(p.expression, "expression", param);
+        param.close();
+    };
+
     w.expr2 = function (e, root) {
         if(ast.is(e).type("ConstExpr")) {
             var attrs = {"type": e.type.name};
             root.push({"constant-expression": [{_attr: attrs}, e.value.toString()]});
         } else if (ast.is(e).type("CallExpr")) {
             var attrs = {"module": e.module, "name": e.name};
-            root.push({"call-expression": {_attr: attrs}});
+            var call = xml.element({_attr: attrs});
+            root.push({"call-expression": call});
+            e.params.forEach(x => {
+                w.param(x, call);
+            });
+            call.close();
         } else if (ast.is(e).type("SelectExpr")){
             var sel = xml.element();
             root.push({"select-expression": sel});
@@ -69,6 +81,9 @@ function Writer(mod, stream) {
     w.variable = function (o, root) {
         if(ast.is(o).type("Variable")){
             const attrs = {name: o.name, type: o.type.name};
+            if(_.isObject(o.param)){
+                attrs["param"] = "param";
+            }
             root.push({"variable": {_attr: attrs}});
         } else {
             throw new Error("unexpected object " + o.constructor.name + " " + JSON.stringify(o));
@@ -180,6 +195,9 @@ function Reader(ret, stream) {
                     var t = types.find(n.attributes["type"]);
                     should.exist(t);
                     v.type = t;
+                    if(n.attributes.hasOwnProperty("param")){
+                        v.param = ast.formal();
+                    }
                     push(v);
                     break;
                 case "start":
@@ -231,6 +249,14 @@ function Reader(ret, stream) {
                 case "expression":
                     //begin of any expression, do nothing
                     break;
+                case "parameter":
+                    var p = ast.expr().call().param();
+                    push(p);
+                    stack.push(x => {
+                        should.ok(ast.isExpression(x));
+                        p.expression = x;
+                    });
+                    break;
                 case "constant-expression":
                     var t = types.find(n.attributes["type"]);
                     should.exist(t);
@@ -243,6 +269,13 @@ function Reader(ret, stream) {
                 case "call-expression":
                     var e = ast.expr().call(n.attributes["module"], n.attributes["name"]);
                     push(e);
+                    stack.push(function (x) {
+                        if (ast.is(x).type("Param")){
+                            e.params.push(x);
+                        } else {
+                            throw new Error("unknown object for call-expression " + x.constructor.name + JSON.stringify(x));
+                        }
+                    });
                     break;
                 case "select-expression":
                     var e = ast.expr().select();
@@ -282,10 +315,11 @@ function Reader(ret, stream) {
                 case "sequence":
                 case "block":
                 case "select-expression":
+                case "call-expression":
+                case "parameter":
                     stack.pop();
                     break;
                 case "expression":
-                case "call-expression":
                 case "import":
                 case "variable":
                 case "selector":

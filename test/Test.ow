@@ -2,7 +2,7 @@ UNIT Test
 
     IMPORT Log Test0
 
-    VAR w, x, y, z ANY
+    VAR w, x, y, z, ret ANY
 
     BLOCK Do
         VAR i, j, k ANY
@@ -27,6 +27,13 @@ UNIT Test
     BLOCK Do1
     END Do1
 
+    BLOCK Do2
+        VAR i, j, k INTEGER
+        PAR i, j
+    BEGIN
+        j -> ret
+    END Do2
+
 START
     1984 -> x
     Do
@@ -34,4 +41,5 @@ START
     x -> z
     Test0.j -> w
     Do0
+    Do2[0, 1, 2, 3]
 END Test

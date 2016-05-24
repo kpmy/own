@@ -57,7 +57,12 @@ function Builder(mod, st) {
             var m = "mod";
             if (!_.isEqual(mod.name, e.module))
                 m = `mod.Import${e.module}`;
-            st.write(`${m}.$${e.name}()`);
+            st.write(`${m}.$${e.name}(`);
+            e.params.forEach((p, i, $) => {
+                if(i > 0) b.ln(",");
+                b.expr(p.expression);
+            });
+            st.write(`)`);
         } else if (ast.is(e).type("SelectExpr")){
             st.write("rts.copyOf(");
             b.sel(e.selector);
@@ -82,17 +87,25 @@ function Builder(mod, st) {
 
     b.block = function (block) {
         st.write(`mod.$${block.name} = function(){\n`);
-
+        st.write(`console.log("enter ${mod.name}.${block.name}");\n`);
+        st.write(`console.dir(arguments, {depth: null});\n`);
+        var par = [];
         for(v in block.objects) {
             var o = block.objects[v];
             if(ast.is(o).type("Variable")){
                 b.variable(o, block);
+                if(_.isObject(o.param)){
+                    par.push(o);
+                }
                 b.ln();
             } else {
                 throw new Error("unknown object " + o.constructor.name);
             }
         }
-
+        par.forEach((o, i, $) => {
+            st.write(`$${o.name}.value = arguments[${i}];`);
+            b.ln();
+        });
         block.sequence.forEach(function(s){
             b.stmt(s);
             b.ln(";");
@@ -112,6 +125,7 @@ function Builder(mod, st) {
         mod.imports.forEach(function (i) {
             b.import(i);
         });
+
 
         for(v in mod.objects) {
             var o = mod.objects[v];

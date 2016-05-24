@@ -51,6 +51,8 @@ function Scanner(stream) {
     this.MINUS = thisSym("-");
     this.COMMA = thisSym(",");
     this.DOT = thisSym(".");
+    this.LBRAK = thisSym("[");
+    this.RBRAK = thisSym("]");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -61,6 +63,8 @@ function Scanner(stream) {
         "VAR": s.VAR = thisSym("VAR"),
         "BLOCK": s.BLOCK = thisSym("BLOCK"),
         "BEGIN": s.BEGIN = thisSym("BEGIN"),
+        "PAR": s.PAR = thisSym("PAR"),
+        
         "NONE": s.NONE = thisSym("NONE"),
         "TRUE": s.TRUE = thisSym("TRUE"),
         "FALSE": s.FALSE = thisSym("FALSE")
@@ -251,6 +255,14 @@ function Scanner(stream) {
                 } else {
                     sym = this.LPAREN;
                 }
+                break;
+            case "[": 
+                this.next();
+                sym = this.LBRAK;
+                break;
+            case "]": 
+                this.next();
+                sym = this.RBRAK;
                 break;
             case ",": 
                 this.next();
