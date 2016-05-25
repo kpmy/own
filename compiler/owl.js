@@ -58,7 +58,7 @@ module.exports = function (f) {
                     var wr = rerequire("./ir/def.js").writer(mod);
                     writeTarget(root+"/"+mod.name+".od").then(wr);
                     var rd = rerequire("./ir/def.js").reader(function (def) {
-                        console.log(def);
+                        console.dir(def, {depth: null});
                     });
                     readSource(root+"/"+mod.name+".od").then(rd);
                 }
@@ -69,7 +69,7 @@ module.exports = function (f) {
                         should.exist(mod);
                         //js dump of module
                         var js = rerequire("./transpiler/js.js");
-                        writeTarget(process.cwd() + "/out/" + mod.name + ".js").then(js(mod));
+                        writeTarget(process.cwd() + "/out/" + mod.name + ".js").then(js(mod, resolveDef));
                         setTimeout(function () {
                             //return; //need no run
                             const rts = rerequire("./rt/rts.js")(process.cwd()+"/out");

@@ -12,4 +12,8 @@ $(function() {
     $(".do").click(function (e) {
         ipc.send("compiler", $(this).data("do"));
     });
+    
+    $(".run").click(function (e){
+        ipc.send("loader", $(this).data("run"));
+    });
 });

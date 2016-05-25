@@ -18,6 +18,11 @@ ipc.on("compiler", function (e, a) {
     rerequire("./compiler/owl.js")(a);
 });
 
+ipc.on("loader", function (e, a) {
+    var own = rerequire("./fw/own.js");
+    own.load(a);
+});
+
 var mainWindow = null;
 
 app.on('ready', function() {

@@ -3,6 +3,7 @@
  */
 const should = require("should");
 const _ = require('underscore');
+const Promise = require("bluebird");
 
 const ast = rerequire("../ir/ast.js");
 
@@ -55,18 +56,41 @@ function Builder(mod, st) {
             st.write(`new rts.Value("${e.type.name}", ${v})`);
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
-            if (!_.isEqual(mod.name, e.module))
+            var block;
+            if (!_.isEqual(mod.name, e.module)) {
                 m = `mod.Import${e.module}`;
+                var imp = mod.thisImport(e.module);
+                block = imp.thisBlock(e.name);
+            } else {
+                block = mod.thisBlock(e.name);
+            }
+            should.exist(block); //ast.Block or object from def
+            
+            //ordered param objects list
+            var fp = Array.from(Object.keys(block.objects))
+                .filter(k => _.isObject(block.objects[k].param))
+                .map(k => block.objects[k])
+                .sort((p0, p1) => p0.param.number - p1.param.number);
+            
             st.write(`${m}.$${e.name}(`);
             e.params.forEach((p, i, $) => {
                 if(i > 0) b.ln(",");
-                b.expr(p.expression);
+                var valueParam = true;
+                if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
+                    if (ast.is(p.expression).type("SelectExpr")){
+                        b.sel(p.expression.selector);
+                        valueParam = false;
+                    }
+                }
+                if (valueParam) {
+                    b.expr(p.expression);
+                }
             });
             st.write(`)`);
         } else if (ast.is(e).type("SelectExpr")){
             st.write("rts.copyOf(");
             b.sel(e.selector);
-            st.write(".value)");
+            st.write(".value())");
         } else {
             throw new Error("unknown expression " + e.constructor.name);
         }
@@ -76,8 +100,9 @@ function Builder(mod, st) {
     b.stmt = function (s) {
         if(ast.is(s).type("Assign")) {
             b.sel(s.selector);
-            st.write(".value = ");
+            st.write(".value(");
             b.expr(s.expression);
+            st.write(")");
         } else if(ast.is(s).type("Call")){
             b.expr(s.expression);
         } else {
@@ -103,14 +128,22 @@ function Builder(mod, st) {
             }
         }
         par.forEach((o, i, $) => {
-            st.write(`$${o.name}.value = arguments[${i}];`);
+            if(_.isEqual(o.param.type, "reference")){
+                st.write(`if(!rts.isValue(arguments[${i}])){\n`);
+                st.write(`$${o.name} = arguments[${i}];\n`); //reference param
+                st.write(`} else {\n`);
+                st.write(`$${o.name}.value(arguments[${i}]);`);
+                b.ln("}");
+            } else {
+                st.write(`$${o.name}.value(arguments[${i}]);`);
+            }
             b.ln();
         });
         block.sequence.forEach(function(s){
             b.stmt(s);
             b.ln(";");
         });
-
+        st.write(`console.log("leave ${mod.name}.${block.name}");\n`);
         st.write(`}`);
     };
 
@@ -162,10 +195,20 @@ function Builder(mod, st) {
     };
 }
 
-module.exports = function (mod) {
+module.exports = function (mod, resolve) {
     should.exist(mod);
+    should.exist(resolve);
     return function (stream) {
         should.exist(stream);
-        new Builder(mod, stream).build();
+        var pl = [];
+        mod.imports.forEach(i => {
+            pl.push(resolve(i.name));
+        });
+        Promise.all(pl).then(d => {
+            mod.imports.forEach(i => {
+                i.def = d.find(ii => _.isEqual(ii.name, i.name));
+            });
+            new Builder(mod, stream).build();
+        });
     }
 };

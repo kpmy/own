@@ -5,6 +5,8 @@ const should = require("should");
 const _ = require("underscore");
 const types = rerequire("./ir/types.js")();
 
+const debug = false;
+
 function Helper(sc) {
     let h = this;
     
@@ -28,10 +30,12 @@ function Helper(sc) {
         }
 
         this.sym = this.sc.get();
-        console.log(this.sym);
+        if(debug) console.log(this.sym);
     };
 
     this.wait = function () {
+        if(debug) console.log("wait");
+        
         should.ok(arguments.length > 0);
         should.ok(this.handled);
 
@@ -54,7 +58,7 @@ function Helper(sc) {
     };
 
     this.expect = function () {
-        console.log("expect");
+        if(debug) console.log("expect");
         should.ok(arguments.length > 0);
         should.ok(this.handled);
         if (!this.wait.apply(this, arguments))
@@ -64,7 +68,7 @@ function Helper(sc) {
     };
 
     this.pass = function () {
-        console.log("pass");
+        if(debug) console.log("pass");
         const skip = Array.prototype.slice.call(arguments, 0);
         var skipped = function(x){
             var ok = false;

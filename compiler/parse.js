@@ -112,19 +112,20 @@ function Parser(sc, resolver) {
                         imp.name = name;
                         imp.alias = alias;
                         if(!cache.hasOwnProperty(name)){
-                            p.resolve(name).then(function (def) {
+                            var noCycleCheck = function (def) {
                                 cache[name].def = def;
                                 const noCycle = function (i) {
-                                    i.imports.forEach(function (ii) {
-                                        if(_.isEqual(ii.name, p.tgt.mod.name)){
+                                    i.def.imports.forEach(function (ii) {
+                                        if(_.isEqual(ii, p.tgt.mod.name)){
                                             p.sc.mark("cyclic import from ", i.name);
                                         } else {
-                                            noCycle(ii);
+                                            p.resolve(ii).then(noCycleCheck);
                                         }
                                     });
                                 };
                                 noCycle(cache[name]);
-                            });
+                            };
+                            p.resolve(name).then(noCycleCheck);
                             cache[name] = imp;
                         }
                         b.imports.push(imp);
@@ -340,6 +341,7 @@ function Parser(sc, resolver) {
                     p.sc.mark("nothing in parameters");
                 }
                 p.pr.next();
+                var order = 0;
                 for(var stop = false; !stop;){
                     p.pr.expect(sc.IDENT, sc.DELIMITER);
                     var id = p.pr.identifier();
@@ -350,7 +352,15 @@ function Parser(sc, resolver) {
                     if(_.isObject(b.objects[id.id].param)){
                         p.sc.mark("duplicate param")
                     }
+                    var par = "value";
+                    if(p.pr.is(sc.CIRC)){
+                        par = "reference";
+                        p.pr.next();
+                    }
                     b.objects[id.id].param = ast.formal();
+                    b.objects[id.id].param.type = par;
+                    b.objects[id.id].param.number = order;
+                    order++;
                     if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
                         p.pr.next();
                     } else {

@@ -82,7 +82,8 @@ function Writer(mod, stream) {
         if(ast.is(o).type("Variable")){
             const attrs = {name: o.name, type: o.type.name};
             if(_.isObject(o.param)){
-                attrs["param"] = "param";
+                attrs["param"] = o.param.type;
+                attrs["order"] = o.param.number;
             }
             root.push({"variable": {_attr: attrs}});
         } else {
@@ -197,6 +198,8 @@ function Reader(ret, stream) {
                     v.type = t;
                     if(n.attributes.hasOwnProperty("param")){
                         v.param = ast.formal();
+                        v.param.type = n.attributes["param"];
+                        v.param.number = parseInt(n.attributes["order"], 10);
                     }
                     push(v);
                     break;

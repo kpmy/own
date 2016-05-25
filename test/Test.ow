@@ -25,12 +25,16 @@ UNIT Test
     END Do0
 
     BLOCK Do1
+        VAR s INTEGER;
+    BEGIN
+        Do2[15, s]
     END Do1
 
     BLOCK Do2
         VAR i, j, k INTEGER
-        PAR i, j
+        PAR i, j^
     BEGIN
+        443 -> j
         j -> ret
     END Do2
 

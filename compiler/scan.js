@@ -42,6 +42,7 @@ function Scanner(stream) {
     this.START = new Sym("START"); //dumb sym
     this.EMPTY = new Sym("EMPTY");
     this.LPAREN = thisSym("(");
+    this.RPAREN = thisSym(")");
     this.SEPARATOR = thisSym(";");
     this.DELIMITER = thisSym("` `");
     this.IDENT = thisSym("IDENT");
@@ -53,6 +54,8 @@ function Scanner(stream) {
     this.DOT = thisSym(".");
     this.LBRAK = thisSym("[");
     this.RBRAK = thisSym("]");
+    this.TIMES = thisSym("*");
+    this.CIRC = thisSym("^");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -256,6 +259,10 @@ function Scanner(stream) {
                     sym = this.LPAREN;
                 }
                 break;
+            case ")":
+                this.next();
+                sym = this.RPAREN;
+                break;
             case "[": 
                 this.next();
                 sym = this.LBRAK;
@@ -271,6 +278,14 @@ function Scanner(stream) {
             case ".":
                 this.next();
                 sym = this.DOT;
+                break;
+            case "*": 
+                this.next();
+                sym = this.TIMES;
+                break;
+            case "^":
+                this.next();
+                sym = this.CIRC;
                 break;
             case " ":
             case "\t":

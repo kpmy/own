@@ -57,7 +57,7 @@ function Types() {
     };
     
     t.find = function (t) {
-        console.log("find type", t);
+        //console.log("find type", t);
         return map.hasOwnProperty(t) ? map[t] : null;
     }
 }

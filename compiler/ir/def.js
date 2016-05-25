@@ -11,7 +11,25 @@ function Writer(mod, stream) {
   this.build = function() {
       var def = ast.def();
       def.name = mod.name;
-
+      mod.imports.forEach(i => {def.imports.push(i.name)});
+      mod.blocks.forEach(b => {
+          var bd = {
+              name: b.name,
+              objects: {}
+          };
+          Array.from(Object.keys(b.objects))
+              .filter(o => _.isObject(b.objects[o].param))
+              .forEach(o => {
+                  var obj = b.objects[o];
+                  bd.objects[o] = {
+                      name: obj.name,
+                      type: {name: obj.type.name},
+                      param: {type: obj.param.type, number: obj.param.number}
+                  };
+              });
+          def.blocks.push(bd);
+      });
+      //TODO objects
       var js = jsonStream.stringifyObject();
       js.pipe(stream);
       js.write(["definition", def]);

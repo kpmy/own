@@ -25,23 +25,47 @@ function Module() {
     this.start = [];
     this.stop = [];
     this.blocks = [];
+    
+    this.thisBlock = function (name) {
+        console.log(`find block ${name}`);
+        var ret = null;
+        ret = this.blocks.find(x => _.isEqual(x.name, name));
+        return ret;
+    };
+    
+    this.thisImport = function (name) {
+        console.log(`find imp ${name}`);
+        var ret = null;
+        ret = this.imports.find(x => _.isEqual(x.name, name));
+        return ret;
+    }
 }
 
 function Block() {
     this.name = null;
     this.sequence = [];
-    this.objects = [];
+    this.objects = {};
 }
 
 function Definition() {
     this.name = null;
+    this.imports = [];
+    this.objects = [];
+    this.blocks = [];
 }
 
 function Import() {
     this.name = null;
     this.alias = null;
     this.def = null;
-    this.imports = [];
+
+    this.thisBlock = function (name) {
+        console.log(`find imp block ${name}`);
+        console.dir(this);
+        var ret = null;
+        ret = this.def.blocks.find(x => _.isEqual(x.name, name));
+        return ret;
+    };
 }
 
 function ConstExpr() {
@@ -59,7 +83,8 @@ function Param(e) {
 }
 
 function FormalParam() {
-    
+    this.type = "value";
+    this.number = null;
 }
 
 function CallExpr() {
