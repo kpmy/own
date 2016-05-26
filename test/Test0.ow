@@ -8,4 +8,12 @@ UNIT Test0
      BEGIN
         1 -> j
      END Do
+
+     BLOCK Do0
+        VAR i INTEGER
+        PAR i^
+     BEGIN
+        3423 -> i
+     END Do0
+
 END Test0

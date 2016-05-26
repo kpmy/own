@@ -50,7 +50,7 @@ function Block() {
 function Definition() {
     this.name = null;
     this.imports = [];
-    this.objects = [];
+    this.objects = {};
     this.blocks = [];
 }
 
@@ -66,6 +66,14 @@ function Import() {
         ret = this.def.blocks.find(x => _.isEqual(x.name, name));
         return ret;
     };
+
+    this.thisObj = function(name){
+        console.log(`find imp obj ${name}`);
+        console.dir(this);
+        var ret = null;
+        ret = this.def.objects.hasOwnProperty(name) ? this.def.objects[name] : null;
+        return ret;
+    }
 }
 
 function ConstExpr() {

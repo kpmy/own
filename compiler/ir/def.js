@@ -29,7 +29,16 @@ function Writer(mod, stream) {
               });
           def.blocks.push(bd);
       });
-      //TODO objects
+      Array.from(Object.keys(mod.objects))
+          .map(k => mod.objects[k])
+          .forEach(o => {
+              var od = {
+                  name: o.name,
+                  type: {name: o.type.name}
+              };
+
+              def.objects[o.name] = od;
+          });
       var js = jsonStream.stringifyObject();
       js.pipe(stream);
       js.write(["definition", def]);

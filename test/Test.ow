@@ -2,7 +2,7 @@ UNIT Test
 
     IMPORT Log Test0
 
-    VAR w, x, y, z, ret ANY
+    VAR w, x, y, z, ret, m ANY
 
     BLOCK Do
         VAR i, j, k ANY
@@ -25,9 +25,12 @@ UNIT Test
     END Do0
 
     BLOCK Do1
-        VAR s INTEGER;
+        VAR s, f INTEGER;
     BEGIN
         Do2[15, s]
+        Test0.Do0[f]
+        Do[144, m]
+        Test0.Do0[m]
     END Do1
 
     BLOCK Do2

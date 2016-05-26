@@ -54,7 +54,8 @@ function Target(name, sc) {
                 return local || t.mod.objects.hasOwnProperty(name);
             }
         } else {
-            return !_.isEqual(name, "Do"); //TODO fix this crap
+            var imp = t.mod.thisImport(mod);
+            return !_.isNull(imp.thisObj(name));
         }
     };
     
@@ -68,7 +69,8 @@ function Target(name, sc) {
             });
             return ret;
         } else {
-            return _.isEqual(name, "Do");
+            var imp = t.mod.thisImport(mod);
+            return !_.isNull(imp.thisBlock(name));
         }
     };
     
