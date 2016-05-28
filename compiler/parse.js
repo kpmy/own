@@ -36,7 +36,7 @@ function Parser(sc, resolver) {
                 } else if (ast.is(obj).type("CallExpr")) {
                     var exists = p.tgt.isBlock(obj.module, obj.name);
                     if (!exists){
-                        var mark = sc.futureMark(`block ${obj.name} not found`);
+                        var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
                         var f = function (res, rej){
                             if(p.tgt.isBlock(obj.module, obj.name)){
                                 res();

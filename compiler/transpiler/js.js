@@ -56,7 +56,7 @@ function Builder(mod, st) {
             st.write(`new rts.Value("${e.type.name}", ${v})`);
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
-            var block;
+            var block = null;
             if (!_.isEqual(mod.name, e.module)) {
                 m = `mod.Import${e.module}`;
                 var imp = mod.thisImport(e.module);
@@ -65,7 +65,7 @@ function Builder(mod, st) {
                 block = mod.thisBlock(e.name);
             }
             should.exist(block); //ast.Block or object from def
-            
+
             //ordered param objects list
             var fp = Array.from(Object.keys(block.objects))
                 .filter(k => _.isObject(block.objects[k].param))

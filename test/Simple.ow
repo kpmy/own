@@ -1,0 +1,7 @@
+UNIT Simple
+
+    IMPORT Console
+
+START
+    Console.Print[0]
+END Simple

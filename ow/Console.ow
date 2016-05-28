@@ -1,0 +1,6 @@
+UNIT Console (* TODO сделать модуль нативным, когда появится возможность, нам тут нужно только .od получить*)
+
+    BLOCK Print
+    END Print
+
+END Console

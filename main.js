@@ -31,8 +31,8 @@ app.on('ready', function() {
         title: "own",
         minWidth: 250,
         minHeight: 100,
-        width: 400,
-        height: 200,
+        width: 500,
+        height: 400,
         center: false
     });
     mainWindow.setMenu(null);

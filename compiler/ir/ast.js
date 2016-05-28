@@ -30,14 +30,14 @@ function Module() {
         console.log(`find block ${name}`);
         var ret = null;
         ret = this.blocks.find(x => _.isEqual(x.name, name));
-        return ret;
+        return _.isUndefined(ret) ? null : ret;
     };
     
     this.thisImport = function (name) {
         console.log(`find imp ${name}`);
         var ret = null;
         ret = this.imports.find(x => _.isEqual(x.name, name));
-        return ret;
+        return _.isUndefined(ret) ? null : ret;
     }
 }
 
@@ -64,7 +64,7 @@ function Import() {
         console.dir(this);
         var ret = null;
         ret = this.def.blocks.find(x => _.isEqual(x.name, name));
-        return ret;
+        return _.isUndefined(ret) ? null : ret;
     };
 
     this.thisObj = function(name){
@@ -72,7 +72,7 @@ function Import() {
         console.dir(this);
         var ret = null;
         ret = this.def.objects.hasOwnProperty(name) ? this.def.objects[name] : null;
-        return ret;
+        return _.isUndefined(ret) ? null : ret;
     }
 }
 
