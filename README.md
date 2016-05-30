@@ -1,2 +1,2 @@
 # own
-Own/L ﴾͡๏̯͡๏﴿
+Own/F + Own/L ﴾͡๏̯͡๏﴿
