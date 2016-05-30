@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 10.05.2016.
- */
+/* Created by kpmy on 10.05.2016 */
 const should = require("should/as-function");
 const _ = require('underscore');
 const charfunk = require("charfunk");
@@ -43,6 +41,10 @@ function Scanner(stream) {
     this.EMPTY = new Sym("EMPTY");
     this.LPAREN = thisSym("(");
     this.RPAREN = thisSym(")");
+    this.LBRUX = thisSym("<<");
+    this.RBRUX = thisSym(">>");
+    this.LBRACE = thisSym("{");
+    this.RBRACE = thisSym("}");
     this.SEPARATOR = thisSym(";");
     this.DELIMITER = thisSym("` `");
     this.IDENT = thisSym("IDENT");
@@ -56,6 +58,8 @@ function Scanner(stream) {
     this.RBRAK = thisSym("]");
     this.TIMES = thisSym("*");
     this.CIRC = thisSym("^");
+    this.LSS = thisSym("<");
+    this.GTR = thisSym(">");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -228,6 +232,7 @@ function Scanner(stream) {
         const end = this.ch;
         var sym = thisSym("STR");
         sym.apos = !_.isEqual(this.ch, '"');
+        sym.value = "";
         this.next();
         while(!this.eof && !_.isEqual(this.ch, end)){
             sym.value = sym.value + this.ch;
@@ -270,6 +275,30 @@ function Scanner(stream) {
             case "]": 
                 this.next();
                 sym = this.RBRAK;
+                break;
+            case "{":
+                this.next();
+                sym = this.LBRACE;
+                break;
+            case "}":
+                this.next();
+                sym = this.RBRACE;
+                break;
+            case "<":
+                if(this.next() == "<"){
+                    sym = this.LBRUX;
+                    this.next();
+                } else {
+                    sym = this.LSS;
+                }
+                break;
+            case ">":
+                if(this.next() == ">"){
+                    sym = this.RBRUX;
+                    this.next();
+                } else {
+                    sym = this.GTR;
+                }
                 break;
             case ",": 
                 this.next();

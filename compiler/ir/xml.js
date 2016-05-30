@@ -33,7 +33,24 @@ function Writer(mod, stream) {
     w.expr2 = function (e, root) {
         if(ast.is(e).type("ConstExpr")) {
             var attrs = {"type": e.type.name};
-            root.push({"constant-expression": [{_attr: attrs}, e.value.toString()]});
+            var val = null;
+            switch (e.type.name){
+                case "STRING":
+                case "INTEGER":
+                case "CHAR":
+                case "BOOLEAN":
+                case "ANY":
+                    val = e.value.toString();
+                    break;
+                case "MAP":
+                case "LIST":
+                    val = JSON.stringify(e.value);
+                    break;
+                default:
+                    throw new Error(`unknown value ${e.type.name}`);
+            }
+            should.exist(val);
+            root.push({"constant-expression": [{_attr: attrs}, val]});
         } else if (ast.is(e).type("CallExpr")) {
             var attrs = {"module": e.module, "name": e.name};
             var call = xml.element({_attr: attrs});
@@ -266,7 +283,22 @@ function Reader(ret, stream) {
                     var e = ast.expr().constant(t);
                     push(e);
                     stack.push(function (x) {
-                        e.setValue(x);
+                        switch (e.type.name){
+                            case "INTEGER":
+                            case "STRING":
+                            case "BOOLEAN":
+                            case "ANY":
+                            case "CHAR":
+                                e.setValue(x);
+                                break;
+                            case "LIST":
+                            case "MAP":
+                                e.setValue(JSON.parse(x));
+                                break;
+                            default:
+                                throw new Error(`unknown constant value ${x}`);
+                        }
+
                     });
                     break;
                 case "call-expression":

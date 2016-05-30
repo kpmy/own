@@ -1,6 +1,6 @@
 /**
- * Created by petry_000 on 13.05.2016.
- */
+    * Created by kpmy on 13.05.2016.
+    */
 const should = require("should");
 const _ = require('underscore');
 const Promise = require("bluebird");
@@ -50,10 +50,23 @@ function Builder(mod, st) {
         st.write("(");
         if(ast.is(e).type("ConstExpr")) {
             var v = e.value;
+            var enc = "utf8";
             if(_.isEqual(e.type.name, "ANY") && _.isEqual(v, "NONE")){
                 v = "global.NONE";
+            } else if (_.isEqual(e.type.name, "STRING")){
+                v = "`" + new Buffer(v).toString("base64") + "`";
+                enc = "base64";
+            } else if (_.isEqual(e.type.name, "CHAR")) {
+                v = v.charCodeAt(0);
+                enc = "charCode"
+            } else if (_.isEqual(e.type.name, "MAP")) {
+                v = JSON.stringify(v);
+                v = `JSON.parse("${v}")`;
+            } else if (_.isEqual(e.type.name, "LIST")){
+                v = JSON.stringify(v);
+                v = `JSON.parse("${v}")`;
             }
-            st.write(`new rts.Value("${e.type.name}", ${v})`);
+            st.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
             var block = null;

@@ -4,7 +4,7 @@
 const should = require("should");
 const _ = require("underscore");
 
-global.NONE = "ENONEULAV";
+global.NONE = "IAMNONEVALUE";
 
 function Type(name, parse) {
     let t = this;
@@ -53,6 +53,34 @@ function Types() {
                 return x;
 
             throw new Error(`unknown bool value ${x}`);
+        }),
+        "STRING": t.STRING = new Type("STRING", function (x) {
+            if(typeof x == "string"){
+                return x;
+            }
+
+            throw new Error(`unknown str value ${x}`);
+        }),
+        "CHAR": t.CHAR = new Type("CHAR", function (x) {
+            if(typeof x == "string"){
+                return x;
+            }
+
+            throw new Error(`unknown char value ${x}`);
+        }),
+        "MAP": t.MAP = new Type("MAP", function (x) {
+            if(typeof x == "object"){
+                return x;
+            }
+
+            throw new Error(`unknown map value ${x}`);
+        }),
+        "LIST": t.LIST = new Type("LIST", function (x) {
+            if(_.isArray(x)){
+                return x;
+            }
+
+            throw new Error(`unknown list value ${x}`);
         })
     };
     

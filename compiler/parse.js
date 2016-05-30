@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 12.05.2016.
- */
+/* Created by kpmy on 12.05.2016 */
 const should = require("should");
 const _ = require("underscore");
 const Promise = require("bluebird");
@@ -27,6 +25,14 @@ function Parser(sc, resolver) {
                 var n = p.pr.num();
                 e.value = ast.expr().constant(n.type, n.value);
                 p.pr.next();
+            } else if(p.pr.is(sc.STR)){
+                var s = p.pr.sym;
+                if(s.apos && s.value.length == 1){
+                    e.value = ast.expr().constant(types.CHAR, s.value)
+                } else {
+                    e.value = ast.expr().constant(types.STRING, s.value);
+                }
+                p.pr.next();
             } else if(p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
                 //var id = p.pr.identifier(p.isMod());
@@ -50,13 +56,23 @@ function Parser(sc, resolver) {
                 } else {
                     p.sc.mark(`invalid object or call`);
                 }
-                //p.pr.next();
+                //p.pr.next(); done later
             } else if(p.pr.is(sc.TRUE) || p.pr.is(sc.FALSE)) {
                 e.value = ast.expr().constant(types.BOOLEAN, p.pr.is(sc.TRUE));
                 p.pr.next();
-            } else if(p.pr.is(sc.NONE)){
+            } else if(p.pr.is(sc.NONE)) {
                 e.value = ast.expr().constant(types.ANY, "NONE");
                 p.pr.next();
+            } else if(p.pr.is(sc.LBRUX)) {
+                p.pr.next();
+                p.pr.expect(sc.RBRUX);
+                p.pr.next();
+                e.value = ast.expr().constant(types.MAP, {});
+            } else if(p.pr.is(sc.LBRAK)){
+                p.pr.next();
+                p.pr.expect(sc.RBRAK);
+                p.pr.next();
+                e.value = ast.expr().constant(types.LIST, []);
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }

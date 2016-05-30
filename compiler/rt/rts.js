@@ -24,10 +24,22 @@ function defaultValue(t) {
         case "BOOLEAN":
             ret = false;
             break;
+        case "STRING":
+            ret = "";
+            break;
+        case "CHAR":
+            ret = "";
+            break;
+        case "MAP":
+            ret = {};
+            break;
+        case "LIST":
+            ret = [];
+            break;
         default:
             throw new Error(`unknown default value for type ${t.name}`);
     }
-    return new Value(t.name, ret);
+    return new Value(t.name, ret, "utf8");
 }
 
 function Obj(t) {
@@ -46,13 +58,23 @@ function Obj(t) {
     }
 }
 
-function Value(tn, val) {
+function Value(tn, val, enc) {
     const v = this;
     
     v.type = types.find(tn);
     should.exist(v.type);
-    if(!(_.isNull(val) || _.isUndefined(val)))
+    if(!(_.isNull(val) || _.isUndefined(val))) {
+        if(_.isEqual(enc, "utf8")){
+            //do nothing
+        } else if (_.isEqual(enc, "base64")) {
+            val = new Buffer(val, enc).toString("utf8");
+        } else if (_.isEqual(enc, "charCode")){
+            val = String.fromCharCode(val);
+        } else {
+            throw new Error(`unknown value encoding ${enc}`);
+        }
         v.value = v.type.parse(val);
+    }
 }
 
 

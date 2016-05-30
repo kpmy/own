@@ -1,3 +1,20 @@
 UNIT Test
 
+    VAR
+        bool BOOLEAN
+        int INTEGER
+        any ANY
+        str STRING
+        ch CHAR
+        map MAP
+        list LIST
+
+START
+    TRUE -> bool
+    140 -> int
+    int -> any
+    "Hello, World!" -> str
+    '!' -> ch
+    <<>> -> map
+    [] -> list
 END Test

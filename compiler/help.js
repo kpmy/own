@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 12.05.2016.
- */
+/* Created by kpmy on 12.05.2016 */
 const should = require("should");
 const _ = require("underscore");
 const types = rerequire("./ir/types.js")();
