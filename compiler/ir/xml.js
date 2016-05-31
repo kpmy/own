@@ -20,37 +20,66 @@ function Writer(mod, stream) {
         if(!_.isNull(s.block)){
             attrs.block = s.block;
         }
-        root.push({"selector": {_attr: attrs}});
+        var sel = xml.element({_attr: attrs});
+        root.push({"selector": sel});
+        Array.from(s.inside)
+            .forEach(e => {
+                w.expr2(e, sel);
+            });
+        sel.close();
     };
 
     w.param = function (p, root) {
-        var param = xml.element();
-        root.push({"parameter": param});
-        w.expr(p.expression, "expression", param);
-        param.close();
+        w.expr(p.expression, "parameter", root);
+    };
+
+    w.map = function(m, root){
+        Array.from(m)
+            .forEach(e => {
+                should.ok(e.length == 2);
+                w.expr(e[0], "key", root);
+                w.expr(e[1], "value", root);
+            });
+    };
+
+    w.list = function(l, root){
+        Array.from(l)
+            .forEach(i => {
+                w.expr(i, "item", root);
+            })
     };
 
     w.expr2 = function (e, root) {
         if(ast.is(e).type("ConstExpr")) {
-            var attrs = {"type": e.type.name};
-            var val = null;
             switch (e.type.name){
                 case "STRING":
                 case "INTEGER":
                 case "CHAR":
                 case "BOOLEAN":
                 case "ANY":
-                    val = e.value.toString();
+                    var attrs = {"type": e.type.name};
+                    var val = e.value.toString();
+                    should.exist(val);
+                    root.push({"constant-expression": [{_attr: attrs}, val]});
                     break;
                 case "MAP":
+                    var attrs = {"type": e.type.name};
+                    var val = xml.element({_attr: attrs});
+                    root.push({"constant-expression": val});
+                    w.map(e.value, val);
+                    val.close();
+                    break;
                 case "LIST":
-                    val = JSON.stringify(e.value);
+                    var attrs = {"type": e.type.name};
+                    var val = xml.element({_attr: attrs});
+                    root.push({"constant-expression": val});
+                    w.list(e.value, val);
+                    val.close();
                     break;
                 default:
                     throw new Error(`unknown value ${e.type.name}`);
             }
-            should.exist(val);
-            root.push({"constant-expression": [{_attr: attrs}, val]});
+
         } else if (ast.is(e).type("CallExpr")) {
             var attrs = {"module": e.module, "name": e.name};
             var call = xml.element({_attr: attrs});
@@ -159,6 +188,7 @@ function Reader(ret, stream) {
         var xs = sax.createStream(true);
         var mod = null;
         var stack = [];
+        var stackType = "";
         function push(x) {
             should.ok(!_.isEmpty(stack));
             consume = stack[stack.length - 1];
@@ -265,6 +295,18 @@ function Reader(ret, stream) {
                     s.name = n.attributes["name"];
                     s.block = n.attributes.hasOwnProperty("block") ? n.attributes["block"] : null;
                     push(s);
+                    stack.push(function(x){
+                        if(ast.isExpression(x)){
+                            s.inside.push(x);
+                        } else {
+                            throw new Error(`unknown object for selector ${x.constructor.name}`);
+                        }
+                    });
+                    break;
+                case "key":
+                case "value":
+                case "item":
+                    stackType = n.name;
                     break;
                 case "expression":
                     //begin of any expression, do nothing
@@ -293,12 +335,25 @@ function Reader(ret, stream) {
                                 break;
                             case "LIST":
                             case "MAP":
-                                e.setValue(JSON.parse(x));
+                                if(_.isUndefined(e.value)){
+                                    e.value = [];
+                                }
+                                switch (stackType){
+                                    case "key":
+                                        e.value.push([x, null]);
+                                        break;
+                                    case "value":
+                                        _.last(e.value)[1] = x;
+                                        break;
+                                    case "item":
+                                        e.value.push(x);
+                                        break;
+                                    default: throw new Error(`unknown stack type ${x.constructor.name}`);
+                                }
                                 break;
                             default:
                                 throw new Error(`unknown constant value ${x}`);
                         }
-
                     });
                     break;
                 case "call-expression":
@@ -352,13 +407,18 @@ function Reader(ret, stream) {
                 case "select-expression":
                 case "call-expression":
                 case "parameter":
+                case "selector":
                     stack.pop();
                     break;
                 case "expression":
                 case "import":
                 case "variable":
-                case "selector":
                     //do nothing
+                    break;
+                case "key":
+                case "value":
+                case "item":
+                    stackType = "";
                     break;
                 default:
                     throw new Error("unknown close tag "+name);

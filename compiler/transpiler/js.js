@@ -21,7 +21,7 @@ function Builder(mod, st) {
         if(ast.is(scope).type("Module")) {
             sc = "mod.";
         }else if (ast.is(scope).type("Block")){
-            sc = "var "
+            sc = "var ";
         } else {
             throw new Error(`unknown scope ${scope.constructor.name}`);
         }
@@ -42,31 +42,54 @@ function Builder(mod, st) {
         }
 
         if(!_.isEmpty(s.inside)){
-            throw new Error("inside selector not supported");
+            should.ok(s.inside.length <= 1);
+            st.write(".select(");
+            Array.from(s.inside)
+                .forEach((o, i, l) => {
+                    if (i>0) st.write(",");
+                    b.expr(o);
+                });
+            st.write(")");
         }
     };
 
     b.expr = function (e) {
         st.write("(");
         if(ast.is(e).type("ConstExpr")) {
-            var v = e.value;
-            var enc = "utf8";
-            if(_.isEqual(e.type.name, "ANY") && _.isEqual(v, "NONE")){
-                v = "global.NONE";
-            } else if (_.isEqual(e.type.name, "STRING")){
-                v = "`" + new Buffer(v).toString("base64") + "`";
-                enc = "base64";
-            } else if (_.isEqual(e.type.name, "CHAR")) {
-                v = v.charCodeAt(0);
-                enc = "charCode"
-            } else if (_.isEqual(e.type.name, "MAP")) {
-                v = JSON.stringify(v);
-                v = `JSON.parse("${v}")`;
+            if (_.isEqual(e.type.name, "MAP")) {
+                st.write(`new rts.Value("${e.type.name}", [`);
+                Array.from(e.value)
+                    .forEach((o, i, a) => {
+                        if(i > 0) st.write(",");
+                        st.write("[");
+                        b.expr(o[0]);
+                        st.write(",");
+                        b.expr(o[1]);
+                        st.write("]")
+                    });
+                st.write(`], "utf8")`)
             } else if (_.isEqual(e.type.name, "LIST")){
-                v = JSON.stringify(v);
-                v = `JSON.parse("${v}")`;
+                st.write(`new rts.Value("${e.type.name}", [`);
+                Array.from(e.value)
+                    .forEach((o, i, a) => {
+                        if(i > 0) st.write(",");
+                        b.expr(o);
+                    });
+                st.write(`], "utf8")`)
+            } else {
+                var v = e.value;
+                var enc = "utf8";
+                if (_.isEqual(e.type.name, "ANY") && _.isEqual(v, "NONE")) {
+                    v = "global.NONE";
+                } else if (_.isEqual(e.type.name, "STRING")) {
+                    v = "`" + new Buffer(v).toString("base64") + "`";
+                    enc = "base64";
+                } else if (_.isEqual(e.type.name, "CHAR")) {
+                    v = v.charCodeAt(0);
+                    enc = "charCode"
+                }
+                st.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
             }
-            st.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
             var block = null;

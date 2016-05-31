@@ -65,14 +65,41 @@ function Parser(sc, resolver) {
                 p.pr.next();
             } else if(p.pr.is(sc.LBRUX)) {
                 p.pr.next();
-                p.pr.expect(sc.RBRUX);
+                var val = [];
+                if(!p.pr.wait(sc.RBRUX, sc.DELIMITER)){
+                    for (var stop = false; !stop;) {
+                        var k = new Expression();
+                        p.pr.expect(sc.COLON, sc.DELIMITER);
+                        p.pr.next();
+                        var v = new Expression();
+                        val.push([k.value, v.value]);
+                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                            stop = true;
+                        } else {
+                            p.pr.next();
+                        }
+                    }
+                    p.pr.expect(sc.RBRUX);
+                }
                 p.pr.next();
-                e.value = ast.expr().constant(types.MAP, {});
+                e.value = ast.expr().constant(types.MAP, val);
             } else if(p.pr.is(sc.LBRAK)){
                 p.pr.next();
-                p.pr.expect(sc.RBRAK);
+                var val = [];
+                if(!p.pr.wait(sc.RBRAK, sc.DELIMITER)){
+                    for (var stop = false; !stop;){
+                        var v = new Expression();
+                        val.push(v.value);
+                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                            stop = true;
+                        } else {
+                            p.pr.next();
+                        }
+                    }
+                    p.pr.expect(sc.RBRAK);
+                }
                 p.pr.next();
-                e.value = ast.expr().constant(types.LIST, []);
+                e.value = ast.expr().constant(types.LIST, val);
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }

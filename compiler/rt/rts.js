@@ -31,7 +31,7 @@ function defaultValue(t) {
             ret = "";
             break;
         case "MAP":
-            ret = {};
+            ret = [];
             break;
         case "LIST":
             ret = [];
@@ -40,6 +40,15 @@ function defaultValue(t) {
             throw new Error(`unknown default value for type ${t.name}`);
     }
     return new Value(t.name, ret, "utf8");
+}
+
+function Inside(t){ //так как селектор не только на чтение но и на запись - проксируем кишки объекта через Inside
+    const i = this;
+
+    i.type = t;
+    i.value = function(){
+        throw new Error("not implemented inside");
+    }
 }
 
 function Obj(t) {
@@ -55,6 +64,30 @@ function Obj(t) {
         }
         
         return o.val;
+    };
+
+    o.select = function(){
+        should.ok(arguments.length == 1); // TODO multiselector
+        var a = arguments[0];
+        var ret = null;
+        switch (o.type.type.name){
+            case "STRING":
+                should.ok(_.isEqual(a.type.name, "INTEGER"));
+                var idx = a.getNativeValue();
+                ret = new Inside(new Type("CHAR"));
+                ret.value = function(x){
+                    if(!(_.isNull(x) || _.isUndefined(x))) {
+                        should.ok(x instanceof Value);
+                        throw new Error("selector write not supported");
+                    }
+
+                    return new Value("CHAR", o.val.getNativeValue().charAt(idx), "utf8");
+                };
+                break;
+            default: throw new Error(`unsupported selection ${o.type.type.name}`);
+        }
+        should.exist(ret);
+        return ret;
     }
 }
 
@@ -62,7 +95,9 @@ function Value(tn, val, enc) {
     const v = this;
     
     v.type = types.find(tn);
+    v.value = null;
     should.exist(v.type);
+
     if(!(_.isNull(val) || _.isUndefined(val))) {
         if(_.isEqual(enc, "utf8")){
             //do nothing
@@ -77,6 +112,20 @@ function Value(tn, val, enc) {
     }
 }
 
+Value.prototype.getNativeValue = function(){
+    const v = this;
+    var ret = null;
+    switch (v.type.name){
+        case "INTEGER":
+        case "STRING":
+            ret = v.value;
+            break;
+        default:
+            throw new Error(`unsupported native type ${v.type.name}`);
+    }
+    should.exist(ret);
+    return ret;
+};
 
 function RTS(pwd) {
     const rts = this;

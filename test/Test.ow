@@ -3,9 +3,9 @@ UNIT Test
     VAR
         bool BOOLEAN
         int INTEGER
-        any ANY
+        any, a0 ANY
         str STRING
-        ch CHAR
+        ch, ch0 CHAR
         map MAP
         list LIST
 
@@ -15,6 +15,7 @@ START
     int -> any
     "Hello, World!" -> str
     '!' -> ch
-    <<>> -> map
-    [] -> list
+    <<"hello": "world", "hi": 1, "bye": int>> -> map
+    ["hello", "world", "hi", 1, "bye", int] -> list
+    str[0] -> ch0
 END Test

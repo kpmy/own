@@ -69,7 +69,7 @@ function Types() {
             throw new Error(`unknown char value ${x}`);
         }),
         "MAP": t.MAP = new Type("MAP", function (x) {
-            if(typeof x == "object"){
+            if(_.isArray(x)){
                 return x;
             }
 

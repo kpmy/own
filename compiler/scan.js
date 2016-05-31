@@ -60,6 +60,7 @@ function Scanner(stream) {
     this.CIRC = thisSym("^");
     this.LSS = thisSym("<");
     this.GTR = thisSym(">");
+    this.COLON = thisSym(":");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -315,6 +316,10 @@ function Scanner(stream) {
             case "^":
                 this.next();
                 sym = this.CIRC;
+                break;
+            case ":":
+                this.next();
+                sym = this.COLON;
                 break;
             case " ":
             case "\t":
