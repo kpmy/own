@@ -57,6 +57,7 @@ function Writer(mod, stream) {
                 case "CHAR":
                 case "BOOLEAN":
                 case "ANY":
+                case "BLOCK":
                     var attrs = {"type": e.type.name};
                     var val = e.value.toString();
                     should.exist(val);
@@ -117,7 +118,13 @@ function Writer(mod, stream) {
         } else if(ast.is(s).type("Call")) {
             var call = xml.element();
             root.push({"call": call});
-            w.expr(s.expression, "expression", call);
+            if(!_.isNull(s.expression)) {
+                w.expr(s.expression, "expression", call);
+            } else if (!_.isNull(s.selector)){
+                w.sel(s.selector, call);
+            } else {
+                throw new Error("error in call");
+            }
             call.close();
         } else {
             throw new Error("unexpected statement "+s.constructor.name);
@@ -282,8 +289,10 @@ function Reader(ret, stream) {
                     var c = ast.stmt().call();
                     push(c);
                     stack.push(function (x) {
-                        if(ast.is(x).type("CallExpr")){
+                        if(ast.is(x).type("CallExpr")) {
                             c.expression = x;
+                        } else if (ast.is(x).type("Selector")){
+                            c.selector = x;
                         } else {
                             throw new Error("unknown object of call " + x.constructor.name + " " + JSON.stringify(x));
                         }
@@ -331,6 +340,7 @@ function Reader(ret, stream) {
                             case "BOOLEAN":
                             case "ANY":
                             case "CHAR":
+                            case "BLOCK":
                                 e.setValue(x);
                                 break;
                             case "LIST":

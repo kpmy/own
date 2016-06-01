@@ -3,11 +3,18 @@ UNIT Test
     VAR
         bool BOOLEAN
         int INTEGER
-        any, a0 ANY
+        any, a0, a1 ANY
         str STRING
         ch, ch0 CHAR
-        map MAP
+        map, map0 MAP
         list LIST
+        proc BLOCK
+
+    BLOCK Do0
+        VAR x INTEGER
+    BEGIN
+        1933 -> x
+    END Do0
 
 START
     TRUE -> bool
@@ -15,7 +22,15 @@ START
     int -> any
     "Hello, World!" -> str
     '!' -> ch
-    <<"hello": "world", "hi": 1, "bye": int>> -> map
+    {"hello": "world", "hi": 1, "bye": int} -> map
     ["hello", "world", "hi", 1, "bye", int] -> list
     str[0] -> ch0
+    str[1] -> str[0]
+    list[4] -> a0
+    a0 -> list[0]
+    map["hi"] -> a1
+    int -> map["bye"]
+    {"list": [0, 1, 2, 3]} -> map0
+    Do0 -> proc
+    proc
 END Test

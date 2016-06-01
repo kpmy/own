@@ -2,7 +2,7 @@
  * Created by petry_000 on 08.05.2016.
  */
 global.rerequire = require("require-new");
-
+const Promise = require("bluebird");
 const electron = require('electron');
 const app = electron.app;
 const ipc = electron.ipcMain;
@@ -15,7 +15,9 @@ app.on('window-all-closed', function() {
 });
 
 ipc.on("compiler", function (e, a) {
-    rerequire("./compiler/owl.js")(a);
+    new Promise((r, e) => {
+        rerequire("./compiler/owl.js")(a);
+    });
 });
 
 ipc.on("loader", function (e, a) {

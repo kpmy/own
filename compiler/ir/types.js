@@ -81,12 +81,23 @@ function Types() {
             }
 
             throw new Error(`unknown list value ${x}`);
+        }),
+        "BLOCK": t.BLOCK = new Type("BLOCK", function(x){
+            if(typeof x == "string"){
+                return x;
+            }
+
+            if(typeof x == "function"){
+                return x;
+            }
+            throw new Error(`unknown block value ${x}`);
         })
     };
     
     t.find = function (t) {
-        //console.log("find type", t);
-        return map.hasOwnProperty(t) ? map[t] : null;
+        var ret = map.hasOwnProperty(t) ? map[t] : null;
+        should.exist(ret);
+        return ret;
     }
 }
 

@@ -32,7 +32,7 @@ function Helper(sc) {
     };
 
     this.wait = function () {
-        if(debug) console.log("wait");
+        if(debug) console.log("wait", arguments);
         
         should.ok(arguments.length > 0);
         should.ok(this.handled);

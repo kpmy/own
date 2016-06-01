@@ -63,10 +63,10 @@ function Parser(sc, resolver) {
             } else if(p.pr.is(sc.NONE)) {
                 e.value = ast.expr().constant(types.ANY, "NONE");
                 p.pr.next();
-            } else if(p.pr.is(sc.LBRUX)) {
+            } else if(p.pr.is(sc.LBRACE)) {
                 p.pr.next();
                 var val = [];
-                if(!p.pr.wait(sc.RBRUX, sc.DELIMITER)){
+                if(!p.pr.wait(sc.RBRACE, sc.DELIMITER)){
                     for (var stop = false; !stop;) {
                         var k = new Expression();
                         p.pr.expect(sc.COLON, sc.DELIMITER);
@@ -79,7 +79,7 @@ function Parser(sc, resolver) {
                             p.pr.next();
                         }
                     }
-                    p.pr.expect(sc.RBRUX);
+                    p.pr.expect(sc.RBRACE);
                 }
                 p.pr.next();
                 e.value = ast.expr().constant(types.MAP, val);
@@ -210,8 +210,10 @@ function Parser(sc, resolver) {
         var sel = ast.selector();
         sel.module = _.isNull(id.module) ? p.tgt.mod.name : id.module;
         sel.name = id.id;
+        var pure = true;
         if(p.pr.wait(sc.LBRAK, sc.DELIMITER)){
             p.pr.next();
+            pure = false;
             for(var stop = false;!stop;){
                 var e = new Expression(b);
                 if(!ast.is(e.value).type("CallExpr")){
@@ -252,6 +254,7 @@ function Parser(sc, resolver) {
             sel.inside.forEach(x => {
                 call.params.push(call.param(x));
             });
+            call.pure = pure;
             return call;
         }
     };
@@ -268,15 +271,17 @@ function Parser(sc, resolver) {
                 var e = new Expression(b);
                 console.log(e.value);
                 if(ast.is(e.value).type("CallExpr")){
-                    if(!p.pr.wait(sc.ASSIGN, sc.DELIMITER)){
+                    if(!p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
                         var c = ast.stmt().call();
                         c.expression = e.value;
                         b.stmts.push(c);
+                    } else if (e.value.pure){ //block reference
+                        e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
                     } else {
                         p.sc.mark("not an expression");
                     }
                 } else {
-                    p.pr.expect(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);                    
+                    p.pr.wait(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
                 }
                 if(p.pr.is(sc.ASSIGN)) {
                     p.pr.next();
@@ -287,6 +292,19 @@ function Parser(sc, resolver) {
                     should.ok(ast.is(a.selector).type("Selector"));
                     //TODO проверить типы слева и справа
                     b.stmts.push(a);
+                } else {
+                    if(ast.is(e.value).type("SelectExpr")){
+                        var obj = p.tgt.thisObj(e.value.selector);
+                        if(_.isEqual(obj.type.name, "BLOCK")) {
+                            var a = ast.stmt().call();
+                            a.selector = e.value.selector;
+                            b.stmts.push(a);
+                        } else {
+                            p.sc.mark("not a statement");
+                        }
+                    } else {
+                        p.sc.mark("not a statement");
+                    }
                 }
             }
     }
@@ -314,17 +332,21 @@ function Parser(sc, resolver) {
                         break;
                     }
                 }
-                if(p.pr.wait(sc.IDENT, sc.DELIMITER)){
-                    p.typ(function (t) {
-                        il.forEach(function (v) {
-                            console.log(v);
-                            should.ok(!b.objects.hasOwnProperty(v));
-                            var vr = ast.variable();
-                            vr.name = v;
-                            vr.type = t;
-                            b.objects[v] = vr;
-                        });
+                var ft = function (t) {
+                    il.forEach(function (v) {
+                        console.log(v);
+                        should.ok(!b.objects.hasOwnProperty(v));
+                        var vr = ast.variable();
+                        vr.name = v;
+                        vr.type = t;
+                        b.objects[v] = vr;
                     });
+                };
+                if(p.pr.wait(sc.IDENT, sc.DELIMITER)) {
+                    p.typ(ft);
+                } else if(p.pr.is(sc.BLOCK)){
+                    ft(types.find("BLOCK"));
+                    p.pr.next();
                 } else {
                     p.sc.mark("type or identifier expected");
                 }

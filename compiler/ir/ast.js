@@ -98,7 +98,11 @@ function FormalParam() {
 function CallExpr() {
     this.name = null;
     this.module = null;
+    this.block = null;
     this.params = [];
+
+    //transient
+    this.pure = true;
     
     this.param = function (e) {
         return new Param(e);
@@ -117,10 +121,11 @@ function Expr() {
         return ret;
     };
 
-    this.call = function (module, name) {
+    this.call = function (module, name, block) {
         var ret = new CallExpr();
         ret.module = module;
         ret.name = name;
+        if(!_.isUndefined(block)) ret.block = block;
         return ret;
     };
     
@@ -138,6 +143,7 @@ function Assign() {
 
 function Call() {
     this.expression = null;
+    this.selector = null;
 }
 
 function Stmt() {

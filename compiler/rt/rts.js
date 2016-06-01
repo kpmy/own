@@ -36,6 +36,9 @@ function defaultValue(t) {
         case "LIST":
             ret = [];
             break;
+        case "BLOCK":
+            ret = null;
+            break;
         default:
             throw new Error(`unknown default value for type ${t.name}`);
     }
@@ -60,7 +63,11 @@ function Obj(t) {
     o.value = function (x) {
         if(!(_.isNull(x) || _.isUndefined(x))){
             should.ok(x instanceof Value);
-            o.val = x;
+            if(_.isEqual(o.type.type.name, "ANY")){
+                o.val = new Value("ANY", x, "utf8");
+            } else {
+                o.val = x;
+            }
         }
         
         return o.val;
@@ -78,16 +85,63 @@ function Obj(t) {
                 ret.value = function(x){
                     if(!(_.isNull(x) || _.isUndefined(x))) {
                         should.ok(x instanceof Value);
-                        throw new Error("selector write not supported");
+                        var ch = x.getNativeValue();
+                        var old = o.val.getNativeValue();
+                        o.val = new Value("STRING", old.substring(0, idx) + ch + old.substring(idx+1), "utf8"); //TODO проверить на всех входных значениях
                     }
-
                     return new Value("CHAR", o.val.getNativeValue().charAt(idx), "utf8");
                 };
                 break;
-            default: throw new Error(`unsupported selection ${o.type.type.name}`);
+            case "LIST":
+                should.ok(_.isEqual(a.type.name, "INTEGER"));
+                var idx = a.getNativeValue();
+                ret = new Inside(new Type("ANY"));
+                ret.value = function(x){
+                    if(!(_.isNull(x) || _.isUndefined(x))) {
+                        should.ok(x instanceof Value);
+                        if(_.isEqual(x.type.name, "ANY")){
+                            o.val.value[idx] = x.value;
+                        } else {
+                            o.val.value[idx] = x;
+                        }
+                    }
+                    return new Value("ANY", o.val.value[idx], "utf8");
+                };
+                break;
+            case "MAP":
+                ret = new Inside(new Type("ANY"));
+                ret.find = function(){
+                    var ret = Array.from(o.val.value)
+                        .filter(i => i[0].isValueEqual(a))
+                        .concat();
+                    should.exist(ret);
+                    should.ok(ret.length  == 1);
+                    return ret[0];
+                };
+                ret.value = function(x){
+                    if(!(_.isNull(x) || _.isUndefined(x))) {
+                        should.ok(x instanceof Value);
+                        if(_.isEqual(x.type.name, "ANY")){
+                            ret.find()[1] = x.value;
+                        } else {
+                            ret.find()[1] = x;
+                        }
+                    }
+                    return new Value("ANY", ret.find()[1], "utf8");
+                };
+                break;
+            default:
+                throw new Error(`unsupported selection ${o.type.type.name}`);
         }
         should.exist(ret);
         return ret;
+    };
+
+    o.call = function(){
+        should.ok(_.isEqual(o.type.type.name, "BLOCK"));
+        var f = o.val.getNativeValue();
+        should.exist(f);
+        f();
     }
 }
 
@@ -98,9 +152,16 @@ function Value(tn, val, enc) {
     v.value = null;
     should.exist(v.type);
 
+    if(_.isUndefined(enc))
+        enc = "utf8";
+
     if(!(_.isNull(val) || _.isUndefined(val))) {
         if(_.isEqual(enc, "utf8")){
-            //do nothing
+            if((val instanceof Value) && _.isEqual(tn, "ANY")){
+                if(_.isEqual(val.type.name, "ANY")){
+                    val = val.value;
+                }
+            }
         } else if (_.isEqual(enc, "base64")) {
             val = new Buffer(val, enc).toString("utf8");
         } else if (_.isEqual(enc, "charCode")){
@@ -118,12 +179,35 @@ Value.prototype.getNativeValue = function(){
     switch (v.type.name){
         case "INTEGER":
         case "STRING":
+        case "CHAR":
+        case "BLOCK":
+        case "LIST":
             ret = v.value;
             break;
         default:
             throw new Error(`unsupported native type ${v.type.name}`);
     }
     should.exist(ret);
+    return ret;
+};
+
+Value.prototype.isValueEqual = function(that){
+    should.ok(that instanceof Value);
+    var ret = true;
+    ret = _.isEqual(this.type.name, that.type.name);
+    if(ret){
+        if (_.isEqual(this.type.name, "ANY")){
+            ret = _.isNull(this.value) ? _.isNull(that.value) : this.value.isValueEqual(that.value);
+        } else {
+            switch (this.type.name){
+                case "STRING":
+                    ret = _.isEqual(this.getNativeValue(), that.getNativeValue());
+                    break;
+                default:
+                    throw new Error(`equality not supported ${this.type.name}`);
+            }
+        }
+    }
     return ret;
 };
 

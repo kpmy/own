@@ -72,9 +72,11 @@ module.exports = function (f) {
                         writeTarget(process.cwd() + "/out/" + mod.name + ".js").then(js(mod, resolveDef));
                         setTimeout(function () {
                             //return; //need no run
-                            const rts = rerequire("./rt/rts.js")(process.cwd()+"/out");
-                            const test = rts.load(mod.name);
-                            rts.dump();
+                            new Promise((r, e) => {
+                                const rts = rerequire("./rt/rts.js")(process.cwd() + "/out");
+                                const test = rts.load(mod.name);
+                                rts.dump();
+                            });
                         }, 100);
                     });
                     readSource(root+"/"+mod.name + ".ox").then(rd);

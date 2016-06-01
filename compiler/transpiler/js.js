@@ -60,22 +60,31 @@ function Builder(mod, st) {
                 st.write(`new rts.Value("${e.type.name}", [`);
                 Array.from(e.value)
                     .forEach((o, i, a) => {
-                        if(i > 0) st.write(",");
+                        if(i > 0) st.write(",\n");
                         st.write("[");
                         b.expr(o[0]);
-                        st.write(",");
+                        st.write(",\t");
                         b.expr(o[1]);
                         st.write("]")
                     });
-                st.write(`], "utf8")`)
-            } else if (_.isEqual(e.type.name, "LIST")){
+                st.write(`])`)
+            } else if (_.isEqual(e.type.name, "LIST")) {
                 st.write(`new rts.Value("${e.type.name}", [`);
                 Array.from(e.value)
                     .forEach((o, i, a) => {
-                        if(i > 0) st.write(",");
+                        if (i > 0) st.write(",\n");
                         b.expr(o);
                     });
-                st.write(`], "utf8")`)
+                st.write(`])`)
+            } else if(_.isEqual(e.type.name, "BLOCK")){
+                var mb = e.value.split(".");
+                should.exist(mb);
+                var bs = ast.selector();
+                bs.module = mb[0];
+                bs.name = mb[1];
+                st.write(`new rts.Value("${e.type.name}", `);
+                b.sel(bs);
+                st.write(`)`)
             } else {
                 var v = e.value;
                 var enc = "utf8";
@@ -140,7 +149,14 @@ function Builder(mod, st) {
             b.expr(s.expression);
             st.write(")");
         } else if(ast.is(s).type("Call")){
-            b.expr(s.expression);
+            if(!_.isNull(s.expression)) {
+                b.expr(s.expression);
+            } else if (!_.isNull(s.selector)){
+                b.sel(s.selector);
+                st.write(".call()");
+            } else {
+                throw new Error("wrong call");
+            }
         } else {
             throw new Error("unknown statement " + s.constructor.name);
         }

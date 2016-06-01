@@ -3,6 +3,7 @@
  */
 const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
+const should = require("should");
 const Promise = require("bluebird");
 
 function Block() {
@@ -58,7 +59,24 @@ function Target(name, sc) {
             return !_.isNull(imp.thisObj(name));
         }
     };
-    
+
+    t.thisObj = function(sel){
+        var ret = null;
+        if(_.isEqual(sel.module, t.mod.name)){
+            if(t.block().isModule) {
+                ret = t.mod.objects[sel.name];
+            } else {
+                var local = t.block().objects.hasOwnProperty(sel.name);
+                ret = local ?  t.block().objects[sel.name] : t.mod.objects[sel.name];
+            }
+        } else {
+            var imp = t.mod.thisImport(sel.module);
+            ret = imp.thisObj(sel.name);
+        }
+        should.exist(ret);
+        return ret;
+    };
+
     t.isBlock = function (mod, name) {
         if(_.isEqual(mod, t.mod.name)){
             var ret = false;
