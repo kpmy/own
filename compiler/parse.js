@@ -19,6 +19,22 @@ function Parser(sc, resolver) {
         const e = this;
 
         e.value = null;
+        e.stack = [];
+
+        e.pop = function () {
+            console.log("pop");
+            //should.ok(!_.isEmpty(e.stack));
+            return e.stack.pop();
+        };
+
+        e.push = function (x) {
+            if(ast.is(x).type("DyadicOp")){
+                x.right = e.pop();
+                x.left = e.pop();
+            }
+            //console.log("push", JSON.stringify(x));
+            e.stack.push(x);
+        };
 
         e.noCall = function () {
             if (ast.is(e.value).type("CallExpr")){
@@ -30,23 +46,23 @@ function Parser(sc, resolver) {
             return e;
         };
 
-        e.factor = function () {
+        e.factor = function () { // ~ ! { } [] ...
             if(p.pr.is(sc.NUM)) {
                 var n = p.pr.num();
-                e.value = ast.expr().constant(n.type, n.value);
+                e.push(ast.expr().constant(n.type, n.value));
                 p.pr.next();
             } else if(p.pr.is(sc.STR)){
                 var s = p.pr.sym;
                 if(s.apos && s.value.length == 1){
-                    e.value = ast.expr().constant(types.CHAR, s.value)
+                    e.push(ast.expr().constant(types.CHAR, s.value))
                 } else {
-                    e.value = ast.expr().constant(types.STRING, s.value);
+                    e.push(ast.expr().constant(types.STRING, s.value));
                 }
                 p.pr.next();
             } else if(p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
                 if (ast.is(obj).type("Selector")) {
-                    e.value = ast.expr().select(obj);
+                    e.push(ast.expr().select(obj));
                 } else if (ast.is(obj).type("CallExpr")) {
                     var exists = p.tgt.isBlock(obj.module, obj.name);
                     if (!exists && _.isEqual(obj.module, p.tgt.mod.name)){
@@ -62,16 +78,16 @@ function Parser(sc, resolver) {
                     } else if (!exists){
                         p.sc.mark("imported object or block not found");
                     }
-                    e.value = obj
+                    e.push(obj)
                 } else {
                     p.sc.mark(`invalid object or call`);
                 }
                 //p.pr.next(); done later
             } else if(p.pr.is(sc.TRUE) || p.pr.is(sc.FALSE)) {
-                e.value = ast.expr().constant(types.BOOLEAN, p.pr.is(sc.TRUE));
+                e.push(ast.expr().constant(types.BOOLEAN, p.pr.is(sc.TRUE)));
                 p.pr.next();
             } else if(p.pr.is(sc.NONE)) {
-                e.value = ast.expr().constant(types.ANY, "NONE");
+                e.push(ast.expr().constant(types.ANY, "NONE"));
                 p.pr.next();
             } else if(p.pr.is(sc.LBRACE)) {
                 p.pr.next();
@@ -92,7 +108,7 @@ function Parser(sc, resolver) {
                     p.pr.expect(sc.RBRACE);
                 }
                 p.pr.next();
-                e.value = ast.expr().constant(types.MAP, val);
+                e.push(ast.expr().constant(types.MAP, val));
             } else if(p.pr.is(sc.LBRAK)){
                 p.pr.next();
                 var val = [];
@@ -109,30 +125,57 @@ function Parser(sc, resolver) {
                     p.pr.expect(sc.RBRAK);
                 }
                 p.pr.next();
-                e.value = ast.expr().constant(types.LIST, val);
+                e.push(ast.expr().constant(types.LIST, val));
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }
         };
 
-        e.cpx = function () {
+        e.cpx = function () { // +! -!
             e.factor();
         };
 
-        e.power = function () {
+        e.power = function () { // ^
             e.cpx();
         };
 
-        e.product = function () {
+        e.product = function () { // * / // %
             e.power();
         };
 
-        e.quantum = function () {
+        e.quantum = function () { // -- + -
+            p.pr.pass(sc.DELIMITER);
             e.product();
+            for (var stop = false; !stop;){
+                p.pr.pass(sc.DELIMITER);
+                if(p.pr.is(sc.PLUS) || p.pr.is(sc.MINUS)){
+                    var op = p.pr.sym.code;
+                    p.pr.next();
+                    p.pr.pass(sc.DELIMITER);
+                    e.product();
+                    e.push(ast.expr().dyadic(op));
+                } else {
+                    stop = true;
+                }
+            }
+        };
+
+        e.compare = function () { // = # < <= => >
+            e.quantum();
+        };
+
+        e.logic = function () { // & |
+            e.compare();
+        };
+
+        e.expression = function () { //  ? :
+            e.logic();
         };
 
         p.pr.pass(sc.DELIMITER);
-        e.quantum();
+        e.expression();
+        e.value = e.stack.pop();
+        should.ok(_.isEmpty(e.stack));
     }
 
     p.resolve = function (name) {
@@ -271,8 +314,6 @@ function Parser(sc, resolver) {
                         p.sc.mark(`identifier not found ${sel.name}`);
                     }
                 }
-            } else {
-                //TODO check for foreign objects
             }
             return sel;
         } else if (foreign && !p.tgt.isBlock(sel.module, sel.name)){

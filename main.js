@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 08.05.2016.
- */
+/* Created by kpmy on 08.05.2016 */
 global.rerequire = require("require-new");
 const Promise = require("bluebird");
 const electron = require('electron');

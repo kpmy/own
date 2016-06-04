@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 13.05.2016.
- */
+/* Created by kpmy on 13.05.2016 */
 const should = require("should");
 const _ = require('underscore');
 const ast = rerequire("./ast.js");

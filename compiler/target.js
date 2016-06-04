@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 12.05.2016.
- */
+/* Created by kpmy on 12.05.2016 */
 const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
 const should = require("should");
@@ -176,8 +174,10 @@ function Target(name, sc) {
         if (ast.is(tgt).type("Selector")){
             if(ast.is(src).type("ConstExpr")) {
                 sel4const();
-            } else if(ast.is(src).type("SelectExpr")){
+            } else if(ast.is(src).type("SelectExpr")) {
                 sel4sel();
+            } else if(ast.is(src).type("DyadicOp")){
+                ret = true; //TODO fix op type check
             } else {
                 throw new Error(`incompatible source ${src.constructor.name}`);
             }

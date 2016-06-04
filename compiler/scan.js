@@ -52,6 +52,7 @@ function Scanner(stream) {
     this.NUM = thisSym("NUM");
     this.ASSIGN = thisSym("->");
     this.MINUS = thisSym("-");
+    this.PLUS = thisSym("+");
     this.COMMA = thisSym(",");
     this.DOT = thisSym(".");
     this.LBRAK = thisSym("[");
@@ -325,6 +326,10 @@ function Scanner(stream) {
             case ":":
                 this.next();
                 sym = this.COLON;
+                break;
+            case "+":
+                this.next();
+                sym = this.PLUS;
                 break;
             case " ":
             case "\t":

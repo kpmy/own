@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 12.05.2016.
- */
+/* Created by kpmy on 12.05.2016 */
 const _ = require('underscore');
 const should = require('should');
 
@@ -123,6 +121,12 @@ function DotExpr() {
 
 }
 
+function DyadicOp() {
+    this.left = null;
+    this.right = null;
+    this.op = null;
+}
+
 function Expr() {
     this.constant = function (type, value) {
         var ret = new ConstExpr();
@@ -151,6 +155,12 @@ function Expr() {
 
     this.dot = function () {
         return new DotExpr();
+    };
+
+    this.dyadic = function (op) {
+        var ret = new DyadicOp();
+        ret.op = op;
+        return ret;
     }
 }
 
@@ -223,5 +233,5 @@ module.exports.isStatement = function (x) {
 };
 
 module.exports.isExpression = function (x) {
-    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr) || (x instanceof DerefExpr) || (x instanceof DotExpr);
+    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr) || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp);
 };

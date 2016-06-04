@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 08.05.2016.
- */
+/* Created by kpmy on 08.05.2016 */
 const $ = require('jquery');
 const electron = require("electron");
 const ipc = electron.ipcRenderer;

@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 13.05.2016.
- */
+/* Created by kpmy on 13.05.2016 */
 const should = require("should");
 const xml = require("xml");
 const sax = require("sax");
@@ -96,8 +94,14 @@ function Writer(mod, stream) {
             sel.close();
         } else if (ast.is(e).type("DerefExpr")) {
             root.push({"deref-expression": {}})
-        } else if (ast.is(e).type("DotExpr")){
+        } else if (ast.is(e).type("DotExpr")) {
             root.push({"dot-expression": {}})
+        } else if (ast.is(e).type("DyadicOp")){
+            var op = xml.element({_attr: {"op": e.op}});
+            root.push({"dyadic-op": op});
+            w.expr(e.left, "left", op);
+            w.expr(e.right, "right", op);
+            op.close();
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
         }
@@ -287,9 +291,7 @@ function Reader(ret, stream) {
                     stack.push(function (x) {
                         if(ast.is(x).type("Selector")){
                             a.selector = x;
-                        }else if (ast.is(x).type("ConstExpr")) {
-                            a.expression = x;
-                        }else if (ast.is(x).type("SelectExpr")){
+                        }else if (ast.isExpression(x)) {
                             a.expression = x;
                         } else {
                             throw new Error("unknown object of assign " + x.constructor.name + " " + JSON.stringify(x));
@@ -326,6 +328,8 @@ function Reader(ret, stream) {
                 case "key":
                 case "value":
                 case "item":
+                case "left":
+                case "right":
                     stackType = n.name;
                     break;
                 case "expression":
@@ -407,6 +411,23 @@ function Reader(ret, stream) {
                     var e = ast.expr().dot();
                     push(e);
                     break;
+                case "dyadic-op":
+                    var op = ast.expr().dyadic(n.attributes["op"]);
+                    push(op);
+                    stack.push(function (x) {
+                        should.ok(ast.isExpression(x));
+                        switch (stackType){
+                            case "left":
+                                op.left = x;
+                                break;
+                            case "right":
+                                op.right = x;
+                                break;
+                            default:
+                                throw new Error(`unknown object for dyadic op ${JSON.stringify(x)}`);
+                        }
+                    });
+                    break;
                 default:
                     throw new Error("unknown tag "+n.name);
             }
@@ -437,6 +458,7 @@ function Reader(ret, stream) {
                 case "call-expression":
                 case "parameter":
                 case "selector":
+                case "dyadic-op":
                     stack.pop();
                     break;
                 case "expression":
@@ -449,6 +471,8 @@ function Reader(ret, stream) {
                 case "key":
                 case "value":
                 case "item":
+                case "left":
+                case "right":
                     stackType = "";
                     break;
                 default:

@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 10.05.2016.
- */
+/* Created by kpmy on 10.05.2016 */
 const fs = require("fs");
 const should = require('should/as-function');
 const _ = require('underscore');

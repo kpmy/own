@@ -173,10 +173,22 @@ function Builder(mod, st) {
             st.write(`${m}.$${e.name}(`);
             b.params(e.params, block);
             st.write(`)`);
-        } else if (ast.is(e).type("SelectExpr")){
+        } else if (ast.is(e).type("SelectExpr")) {
             st.write("rts.copyOf(");
             b.sel(e.selector);
             st.write(".value())");
+        } else if (ast.is(e).type("DyadicOp")){
+            st.write("rts.math.dop(");
+            st.write("function(){");
+            st.write("return ");
+            b.expr(e.left);
+            st.write("}, ");
+            st.write(`"${e.op}", `);
+            st.write("function(){");
+            st.write("return ");
+            b.expr(e.right);
+            st.write("}");
+            st.write(")");
         } else {
             throw new Error("unknown expression " + e.constructor.name);
         }

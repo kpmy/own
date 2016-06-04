@@ -1,0 +1,7 @@
+UNIT Test6
+    VAR i, j, k INTEGER
+START
+    1 -> i
+    2 -> j
+    i + j -> k
+END Test6

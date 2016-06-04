@@ -1,6 +1,4 @@
-/**
- * Created by petry_000 on 19.05.2016.
- */
+/* Created by kpmy on 19.05.2016 */
 const should = require("should");
 const types = rerequire("../ir/types.js")();
 const _ = require("underscore");
@@ -266,132 +264,7 @@ function Obj(t, cv) {
         default: throw new Error(`not supported type ${t}`)
     }
 }
-/*
-function ObjOld(t) {
-    const o = this;
-    
-    o.type = t;
-    o.val = defaultValue(t.base);
-    
-    o.value = function (x) {
-        if(!(_.isNull(x) || _.isUndefined(x))){
-            should.ok(x instanceof Value);
-            if(_.isEqual(o.type.base.name, "ANY")) {
-                o.val = new Value("ANY", x, "utf8");
-            } else if (_.isEqual(o.type.base.name, "BLOCK") && _.isEqual(x.type.name, "ANY") && _.isNull(x.value)){
-                o.val = new Value("BLOCK", null);
-            } else if (_.isEqual(o.type.base, x.type)){
-                o.val = x;
-            } else {
-                throw new Error("types don't match")
-            }
-        }
-        
-        return o.val;
-    };
 
-    o.select = function(){
-        should.ok(arguments.length == 1); // TODO multiselector
-        var a = arguments[0];
-        var ret = null;
-        switch (o.type.base.name){
-            case "STRING":
-                should.ok(_.isEqual(a.type.name, "INTEGER"));
-                var idx = a.getNativeValue();
-                ret = new Inside();
-                ret.deeper = function() {
-                    return new Obj(new Type("CHAR"));
-                };
-                ret.deeper.parent = o;
-                ret.value = function(x){
-                    if(!(_.isNull(x) || _.isUndefined(x))) {
-                        should.ok(x instanceof Value);
-                        var ch = x.getNativeValue();
-                        var old = o.val.getNativeValue();
-                        o.val = new Value("STRING", old.substring(0, idx) + ch + old.substring(idx+1), "utf8"); //TODO проверить на всех входных значениях
-                    }
-                    return new Value("CHAR", o.val.getNativeValue().charAt(idx), "utf8");
-                };
-                ret.deref = notImpl;
-                ret.select = notImpl;
-                ret.call = notImpl;
-                break;
-            case "LIST":
-                should.ok(_.isEqual(a.type.name, "INTEGER"));
-                var idx = a.getNativeValue();
-                ret = new Inside();
-                ret.deeper =
-                ret.value = function(x){
-                    if(!(_.isNull(x) || _.isUndefined(x))) {
-                        should.ok(x instanceof Value);
-                        if(_.isEqual(x.type.name, "ANY")){
-                            o.val.value[idx] = x.value;
-                        } else {
-                            o.val.value[idx] = x;
-                        }
-                    }
-                    return new Value("ANY", o.val.value[idx], "utf8");
-                };
-                break;
-            case "MAP":
-                ret = new Inside();
-                ret.find = function(){
-                    var ret = Array.from(o.val.value)
-                        .filter(i => i[0].isValueEqual(a))
-                        .concat();
-                    should.exist(ret);
-                    should.ok(ret.length  == 1);
-                    return ret[0];
-                };
-                ret.value = function(x){
-                    if(!(_.isNull(x) || _.isUndefined(x))) {
-                        should.ok(x instanceof Value);
-                        if(_.isEqual(x.type.name, "ANY")){
-                            ret.find()[1] = x.value;
-                        } else {
-                            ret.find()[1] = x;
-                        }
-                    }
-                    return new Value("ANY", ret.find()[1], "utf8");
-                };
-                break;
-            default:
-                throw new Error(`unsupported selection ${o.type.base.name}`);
-        }
-        should.exist(ret);
-        return ret;
-    };
-
-    o.call = function(){
-        should.ok(_.isEqual(o.type.base.name, "BLOCK"));
-        var f = o.val.getNativeValue();
-        should.exist(f);
-        f(...arguments);
-    };
-
-    o.deref = function () {
-        var ret = null;
-        switch (o.type.base.name){
-            case "ANY":
-                should.exist(o.val.value);
-                should.ok(o.val.value instanceof Value);
-                ret = new Inside();
-                ret.value = function (x) {
-                    if(!_.isUndefined(x)){
-                        throw new Error("can't write deref");
-                    }
-
-                    return Value.prototype.copyOf(o.val.value);
-                };
-                break;
-            default:
-                throw new Error(`can't deref ${o.type.base.name}`)
-        }
-        should.exist(ret);
-        return ret;
-    }
-}
-*/
 function Value(tn, val, enc) {
     const v = this;
     
@@ -465,12 +338,79 @@ Value.prototype.isValueEqual = function(that){
     return ret;
 };
 
+function ValueMath() {
+    const m = this;
+    m.nativeOp = {
+        "+": "+",
+        "-": "-"
+    };
+    m.olrmap = {}; //{op : {left type : {right type : result type
+    m.olrmap["+"] = {
+        "INTEGER": {
+            "INTEGER": "INTEGER"
+        }
+    };
+    m.olrmap["-"] = m.olrmap["+"];
+
+    m.value = function () {
+        return new Value(...arguments);
+    };
+
+    m.dop = function (lv, op, rv) {
+        function left() {
+            var ret = lv();
+            should.ok(ret instanceof Value);
+            return ret
+        }
+        function right() {
+            var ret = rv();
+            should.ok(ret instanceof Value);
+            return ret
+        }
+        var body = `throw new Error("not implemented")`;
+        if (!_.isUndefined(m.nativeOp[op])) {
+            body = (`
+                const op = "${op}";
+                var left = l();
+                
+                var lrmap = this.olrmap[op];
+                if(lrmap === undefined) throw new Error("unknown op "+op);
+                
+                var rmap = lrmap[left.type.name];
+                if(rmap === undefined) throw new Error("unknown left type "+left.type.name);
+                
+                var right = r();
+                
+                var rt = rmap[right.type.name];
+                if(rt === undefined) throw new Error("unknown right type "+right.type.name);
+             `);
+            if(typeof m.nativeOp[op] == "string") {
+                body = body + (`
+                var ret = left.getNativeValue() ${m.nativeOp[op]} right.getNativeValue();
+                `);
+            } else {
+                throw new Error("not implemented");
+            }
+            body = body + (`
+                return this.value(rt, ret);`
+                );
+        } else {
+            throw new Error(`not implemented for ${op}`);
+        }
+        var fn = new Function(`l`, `r`, body);
+        var mfn = fn.bind(m);
+        return mfn(left, right);
+    }
+}
+
 function RTS(pwd) {
     const rts = this;
 
     rts.Type = Type;
     rts.Obj = Obj;
     rts.Value = Value;
+
+    rts.math = new ValueMath();
 
     rts.pwd = pwd;
     rts.modules = [];
