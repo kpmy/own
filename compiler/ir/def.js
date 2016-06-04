@@ -12,7 +12,9 @@ function Writer(mod, stream) {
       var def = ast.def();
       def.name = mod.name;
       mod.imports.forEach(i => {def.imports.push(i.name)});
-      mod.blocks.forEach(b => {
+      mod.blocks
+          .filter(b => b.exported)
+          .forEach(b => {
           var bd = {
               name: b.name,
               objects: {}
@@ -31,10 +33,12 @@ function Writer(mod, stream) {
       });
       Array.from(Object.keys(mod.objects))
           .map(k => mod.objects[k])
+          .filter(o => !_.isEmpty(o.modifier))
           .forEach(o => {
               var od = {
                   name: o.name,
-                  type: {name: o.type.name}
+                  type: {name: o.type.name},
+                  modifier: o.modifier
               };
 
               def.objects[o.name] = od;

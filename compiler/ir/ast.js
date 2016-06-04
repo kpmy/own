@@ -16,6 +16,7 @@ function Selector() {
 function Variable() {
     this.name = null;
     this.type = null;
+    this.modifier = "";
 }
 
 function Module() {
@@ -45,6 +46,7 @@ function Block() {
     this.name = null;
     this.sequence = [];
     this.objects = {};
+    this.exported = false;
 }
 
 function Definition() {

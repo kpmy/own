@@ -49,7 +49,7 @@ function Parser(sc, resolver) {
                     e.value = ast.expr().select(obj);
                 } else if (ast.is(obj).type("CallExpr")) {
                     var exists = p.tgt.isBlock(obj.module, obj.name);
-                    if (!exists){
+                    if (!exists && _.isEqual(obj.module, p.tgt.mod.name)){
                         var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
                         var f = function (res, rej){
                             if(p.tgt.isBlock(obj.module, obj.name)){
@@ -59,6 +59,8 @@ function Parser(sc, resolver) {
                             }
                         };
                         p.tgt._resolvers.push(f);
+                    } else if (!exists){
+                        p.sc.mark("imported object or block not found");
                     }
                     e.value = obj
                 } else {
@@ -220,7 +222,7 @@ function Parser(sc, resolver) {
         sel.name = id.id;
         var pure = true;
         var deref = false;
-        var cascade = false;
+        var cascade = 0;
         for(var stop = false; !stop;) {
             if (p.pr.wait(sc.DOLLAR)) {
                 p.pr.next();
@@ -247,12 +249,13 @@ function Parser(sc, resolver) {
                 }
                 p.pr.expect(sc.RBRAK, sc.DELIMITER);
                 p.pr.next();
-                cascade = true;
+                cascade++;
                 pure = false;
             }else {
                 stop = true;
             }
         }
+        console.log("foreign", foreign);
         if(p.tgt.isObj(sel.module, sel.name)) {
             if (!foreign) {
                 if (!p.tgt.block().isModule) {
@@ -272,8 +275,10 @@ function Parser(sc, resolver) {
                 //TODO check for foreign objects
             }
             return sel;
+        } else if (foreign && !p.tgt.isBlock(sel.module, sel.name)){
+            p.sc.mark(`identifier not found ${sel.module} ${sel.name}`);
         } else {
-            if (deref || cascade)
+            if (deref || cascade > 1)
                 p.sc.mark("multiple selectors not allowed here");
 
             var call = ast.expr().call(sel.module, sel.name);
@@ -318,6 +323,10 @@ function Parser(sc, resolver) {
                     if(!p.tgt.compatibleTypes(a.selector, a.expression)){
                         p.sc.mark("incompatible types");
                     }
+                    var o = p.tgt.thisObj(a.selector);
+                    if(!_.isEqual(a.selector.module, p.tgt.mod.name) && !_.isEqual(o.modifier, "rw") && _.isEmpty(a.selector.inside)){
+                        p.sc.mark("can't assign to read-only object");
+                    }
                     b.stmts.push(a);
                 } else {
                     if(ast.is(e.value).type("SelectExpr")) {
@@ -347,13 +356,25 @@ function Parser(sc, resolver) {
                 var il = [];
                 for(;;){
                     should.ok(!p.isMod());
-                    var id = p.pr.identifier().id;
-                    if(!b.objects.hasOwnProperty(id)) {
-                        il.push(id);
+                    var o = {
+                        id: p.pr.identifier().id,
+                        mod: null
+                    };
+                    if(!b.objects.hasOwnProperty(o.id)) {
+                        il.push(o);
                     } else {
                         p.sc.mark("identifiers already exists ", id);
                     }
                     p.pr.next();
+                    if(p.pr.wait(sc.TIMES)){
+                        p.pr.next();
+                        o.mod = "rw";
+                    } else if (p.pr.is(sc.MINUS)){
+                        p.pr.next();
+                        o.mod = "r";
+                    } else{
+                        o.mod = "";
+                    }
                     if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
                         p.pr.next();
                         p.pr.pass(sc.DELIMITER);
@@ -364,11 +385,12 @@ function Parser(sc, resolver) {
                 var ft = function (t) {
                     il.forEach(function (v) {
                         //console.log(v);
-                        should.ok(!b.objects.hasOwnProperty(v));
+                        should.ok(!b.objects.hasOwnProperty(v.id));
                         var vr = ast.variable();
-                        vr.name = v;
+                        vr.name = v.id;
                         vr.type = t;
-                        b.objects[v] = vr;
+                        vr.modifier = v.mod;
+                        b.objects[v.id] = vr;
                     });
                 };
                 if(p.pr.wait(sc.IDENT, sc.DELIMITER)) {
@@ -401,6 +423,7 @@ function Parser(sc, resolver) {
                 block.objects = pb.objects;
                 block.sequence = pb.stmts;
                 block.name = pb.name;
+                block.exported = pb.exported;
                 b.blocks.push(block);
             }
             p.tgt.mod.blocks = b.blocks;
@@ -427,6 +450,10 @@ function Parser(sc, resolver) {
 
             b.name = name;
             p.pr.next();
+            if (p.pr.wait(sc.TIMES)){
+                p.pr.next();
+                b.exported = true;
+            }
             if (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }

@@ -2,14 +2,14 @@ UNIT Test0
     IMPORT Log
 
     VAR
-        i, j INTEGER
+        i*, j* INTEGER
 
-     BLOCK Do
+     BLOCK Do*
      BEGIN
         1 -> j
      END Do
 
-     BLOCK Do0
+     BLOCK Do0*
         VAR i INTEGER
         PAR i^
      BEGIN

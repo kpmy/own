@@ -1,0 +1,12 @@
+UNIT Test5
+    IMPORT Test4
+
+    VAR i INTEGER
+
+START
+    Test4.Do[11]
+    12 -> Test4.x
+    (* 13 -> Test4.y *)
+    (* Test4.Hidden *)
+    (* Test4.z -> i *)
+END Test5

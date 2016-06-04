@@ -142,6 +142,9 @@ function Writer(mod, stream) {
                 attrs["param"] = o.param.type;
                 attrs["order"] = o.param.number;
             }
+            if(!_.isEmpty(o.modifier)){
+                attrs["modifier"] = o.modifier;
+            }
             root.push({"variable": {_attr: attrs}});
         } else {
             throw new Error("unexpected object " + o.constructor.name + " " + JSON.stringify(o));
@@ -167,7 +170,7 @@ function Writer(mod, stream) {
             w.variable(o, unit);
         }
         mod.blocks.forEach(function (b) {
-            var attrs = {"name": b.name};
+            var attrs = {"name": b.name, "exported": b.exported};
             var block = xml.element({_attr: attrs});
             unit.push({"block": block});
             for(var v in b.objects){
@@ -229,6 +232,7 @@ function Reader(ret, stream) {
                 case "block":
                     var block = ast.block();
                     block.name = n.attributes["name"];
+                    block.exported = _.isEqual(n.attributes["exported"], "true");
                     push(block);
                     stack.push(function (x) {
                         if (ast.is(x).type("Variable")) {
@@ -258,6 +262,9 @@ function Reader(ret, stream) {
                         v.param = ast.formal();
                         v.param.type = n.attributes["param"];
                         v.param.number = parseInt(n.attributes["order"], 10);
+                    }
+                    if(n.attributes.hasOwnProperty("modifier")){
+                        v.modifier = n.attributes["modifier"];
                     }
                     push(v);
                     break;

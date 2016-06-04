@@ -12,6 +12,7 @@ function Block() {
     this.objects = {};
     this.name = null;
     this.blocks = [];
+    this.exported = false;
 
     this.hasImport = function (alias) {
         if (_.isEmpty(alias))

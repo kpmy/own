@@ -1,0 +1,18 @@
+UNIT Test4
+
+    VAR x*, y-, z INTEGER
+
+    BLOCK Do*
+        VAR i INTEGER
+        PAR i
+    BEGIN
+        i -> y
+    END Do
+
+    BLOCK Hidden
+    END Hidden
+
+START
+    10 -> x
+    14 -> z
+END Test4

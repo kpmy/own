@@ -3,7 +3,7 @@ const should = require("should");
 const _ = require("underscore");
 const types = rerequire("./ir/types.js")();
 
-const debug = false;
+const debug = true;
 
 function Helper(sc) {
     let h = this;

@@ -91,6 +91,11 @@ function Builder(mod, st) {
             var valueParam = true;
             if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
                 if (ast.is(p.expression).type("SelectExpr")){
+                    if(!_.isEqual(mod.name, p.expression.selector.module)){
+                        var imp = mod.thisImport(p.expression.selector.module);
+                        var o = imp.def.objects[p.expression.selector.name];
+                        should.ok(_.isEqual(o.modifier, "rw"));
+                    }
                     b.sel(p.expression.selector);
                     valueParam = false;
                 }
