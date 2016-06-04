@@ -61,6 +61,7 @@ function Scanner(stream) {
     this.LSS = thisSym("<");
     this.GTR = thisSym(">");
     this.COLON = thisSym(":");
+    this.DOLLAR = thisSym("$");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -304,6 +305,10 @@ function Scanner(stream) {
             case ",": 
                 this.next();
                 sym = this.COMMA;
+                break;
+            case "$":
+                this.next();
+                sym = this.DOLLAR;
                 break;
             case ".":
                 this.next();

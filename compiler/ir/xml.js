@@ -89,11 +89,15 @@ function Writer(mod, stream) {
                 w.param(x, call);
             });
             call.close();
-        } else if (ast.is(e).type("SelectExpr")){
+        } else if (ast.is(e).type("SelectExpr")) {
             var sel = xml.element();
             root.push({"select-expression": sel});
             w.sel(e.selector, sel);
             sel.close();
+        } else if (ast.is(e).type("DerefExpr")) {
+            root.push({"deref-expression": {}})
+        } else if (ast.is(e).type("DotExpr")){
+            root.push({"dot-expression": {}})
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
         }
@@ -240,7 +244,7 @@ function Reader(ret, stream) {
                     var imp = ast.imp();
                     imp.name = n.attributes["name"];
                     imp.alias = n.attributes.hasOwnProperty("alias") ? n.attributes["alias"] : "";
-                    console.log("need resolve", imp.name);
+                    //console.log("need resolve", imp.name);
                     imp.def = ast.def();
                     push(imp);
                     break;
@@ -388,6 +392,14 @@ function Reader(ret, stream) {
                         }
                     });
                     break;
+                case "deref-expression":
+                    var e = ast.expr().deref();
+                    push(e);
+                    break;
+                case "dot-expression":
+                    var e = ast.expr().dot();
+                    push(e);
+                    break;
                 default:
                     throw new Error("unknown tag "+n.name);
             }
@@ -423,6 +435,8 @@ function Reader(ret, stream) {
                 case "expression":
                 case "import":
                 case "variable":
+                case "deref-expression":
+                case "dot-expression":
                     //do nothing
                     break;
                 case "key":

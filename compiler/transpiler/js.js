@@ -41,15 +41,38 @@ function Builder(mod, st) {
             st.write(`mod.Import${s.module}.$${s.name}`);
         }
 
-        if(!_.isEmpty(s.inside)){
-            should.ok(s.inside.length <= 1);
+        function select(el) {
+            should.ok(el.length > 0);
             st.write(".select(");
-            Array.from(s.inside)
+            Array.from(el)
                 .forEach((o, i, l) => {
                     if (i>0) st.write(",");
                     b.expr(o);
                 });
             st.write(")");
+        }
+        function deref() {
+            st.write(".deref()");
+        }
+        function flush(eb) {
+            if (eb.length > 0)
+                select(eb);
+            eb.length = 0;
+        }
+        if(!_.isEmpty(s.inside)){
+            var eb = [];
+            Array.from(s.inside)
+                .forEach(e => {
+                    if(ast.is(e).type("DerefExpr")) {
+                        flush(eb);
+                        deref();
+                    } else if (ast.is(e).type("DotExpr")){
+                        flush(eb);
+                    } else {
+                        eb.push(e);
+                    }
+                });
+            flush(eb);
         }
     };
 
@@ -166,9 +189,7 @@ function Builder(mod, st) {
                 b.expr(s.expression);
             } else if (!_.isNull(s.selector)){
                 var inside = s.selector.inside.slice();
-                console.log(s.selector.inside);
-                console.log(inside);
-                s.selector.inside = [];
+                 s.selector.inside = [];
                 b.sel(s.selector);
                 st.write(".call(");
                 b.params(inside);

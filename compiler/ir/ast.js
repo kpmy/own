@@ -113,6 +113,14 @@ function SelectExpr() {
     this.selector = null;
 }
 
+function DerefExpr() {
+
+}
+
+function DotExpr() {
+
+}
+
 function Expr() {
     this.constant = function (type, value) {
         var ret = new ConstExpr();
@@ -133,6 +141,14 @@ function Expr() {
         var ret = new SelectExpr();
         ret.selector = sel;
         return ret;
+    };
+
+    this.deref = function () {
+        return new DerefExpr();
+    };
+
+    this.dot = function () {
+        return new DotExpr();
     }
 }
 
@@ -205,5 +221,5 @@ module.exports.isStatement = function (x) {
 };
 
 module.exports.isExpression = function (x) {
-    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr);
+    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr) || (x instanceof DerefExpr) || (x instanceof DotExpr);
 };

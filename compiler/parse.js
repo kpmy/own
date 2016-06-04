@@ -219,24 +219,39 @@ function Parser(sc, resolver) {
         sel.module = _.isNull(id.module) ? p.tgt.mod.name : id.module;
         sel.name = id.id;
         var pure = true;
-        if(p.pr.wait(sc.LBRAK, sc.DELIMITER)){
-            p.pr.next();
-            pure = false;
-            for(var stop = false;!stop;){
-                var e = new Expression(b);
-                if(!ast.is(e.value).type("CallExpr")){
-                    sel.inside.push(e.value);
-                } else {
-                    p.sc.mark("wrong expr")
+        var deref = false;
+        var cascade = false;
+        for(var stop = false; !stop;) {
+            if (p.pr.wait(sc.DOLLAR)) {
+                p.pr.next();
+                pure = false;
+                deref = true;
+                sel.inside.push(ast.expr().deref());
+            }else if (p.pr.wait(sc.LBRAK)) {
+                p.pr.next();
+                if (cascade){
+                    sel.inside.push(ast.expr().dot());
                 }
-                if(p.pr.wait(sc.COMMA, sc.DELIMITER, sc.SEPARATOR)){
-                    p.pr.next();
-                } else {
-                    stop = true;
+                for (var end = false; !end;) {
+                    var e = new Expression(b);
+                    if (!ast.is(e.value).type("CallExpr")) {
+                        sel.inside.push(e.value);
+                    } else {
+                        p.sc.mark("wrong expr")
+                    }
+                    if (p.pr.wait(sc.COMMA, sc.DELIMITER, sc.SEPARATOR)) {
+                        p.pr.next();
+                    } else {
+                        end = true;
+                    }
                 }
+                p.pr.expect(sc.RBRAK, sc.DELIMITER);
+                p.pr.next();
+                cascade = true;
+                pure = false;
+            }else {
+                stop = true;
             }
-            p.pr.expect(sc.RBRAK, sc.DELIMITER);
-            p.pr.next();
         }
         if(p.tgt.isObj(sel.module, sel.name)) {
             if (!foreign) {
@@ -258,6 +273,9 @@ function Parser(sc, resolver) {
             }
             return sel;
         } else {
+            if (deref || cascade)
+                p.sc.mark("multiple selectors not allowed here");
+
             var call = ast.expr().call(sel.module, sel.name);
             sel.inside.forEach(x => {
                 call.params.push(call.param(x));
@@ -272,12 +290,11 @@ function Parser(sc, resolver) {
         for(var stop = false; !stop;){
             p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
             if (p.pr.is(sc.END)) {
-                console.log("end");
                 //do nothing, handled in .block
                 stop = true;
             } else { //expr -> obj
                 var e = new Expression(b);
-                console.log(e.value);
+                //console.log(e.value);
                 if(ast.is(e.value).type("CallExpr")){
                     if(!p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
                         var c = ast.stmt().call();
@@ -298,7 +315,9 @@ function Parser(sc, resolver) {
                     p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
                     a.selector = p.obj(b);
                     should.ok(ast.is(a.selector).type("Selector"));
-                    //TODO проверить типы слева и справа
+                    if(!p.tgt.compatibleTypes(a.selector, a.expression)){
+                        p.sc.mark("incompatible types");
+                    }
                     b.stmts.push(a);
                 } else {
                     if(ast.is(e.value).type("SelectExpr")) {
@@ -344,7 +363,7 @@ function Parser(sc, resolver) {
                 }
                 var ft = function (t) {
                     il.forEach(function (v) {
-                        console.log(v);
+                        //console.log(v);
                         should.ok(!b.objects.hasOwnProperty(v));
                         var vr = ast.variable();
                         vr.name = v;
@@ -489,8 +508,8 @@ function Parser(sc, resolver) {
                 Promise.all(pr).then(function () {
                     res(p.tgt.result());
                 });
-            })//.catch(error => {console.trace(error);});
-        });;
+            });//.catch(error => {console.trace(error);});
+        });
     };
 
      p.pr.next();

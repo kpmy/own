@@ -108,6 +108,82 @@ function Target(name, sc) {
 
     this.result = function () {
         return this.mod
+    };
+
+    t.compatibleTypes = function (tgt, src) {
+        console.log("compatibility test ", tgt, src);
+        var ret = false;
+        function sel4const() {
+            should.ok(_.isEmpty(tgt.inside));
+            var o = t.thisObj(tgt);
+            switch (o.type.name){
+                case "ANY":
+                    ret = true;
+                    break;
+                case "INTEGER":
+                case "BOOLEAN":
+                case "STRING":
+                case "CHAR":
+                case "BLOCK":
+                    ret = _.isEqual(o.type.name, src.type.name);
+                    if (!ret && _.isEqual(o.type.name, "BLOCK")){
+                        ret = _.isEqual(src.type.name, "ANY")
+                    }
+                    break;
+                case "LIST":
+                case "MAP":
+                    ret = true; //TODO добавить проверку
+                    break;
+                default: throw new Error(`unsupported type check ${o.type.name}`);
+            }
+        }
+
+        function sel4sel() {
+            var o = t.thisObj(tgt);
+            var p = t.thisObj(src.selector);
+            switch (o.type.name){
+                case "ANY":
+                    ret = true;
+                    break;
+                case "INTEGER":
+                case "BOOLEAN":
+                case "CHAR":
+                    ret = _.isEqual(o.type.name, p.type.name);
+                    if(!ret &&  !_.isEmpty(src.selector.inside)){
+                        if (_.isEqual(p.type.name, "ANY")){
+                            var deref = _.last(src.selector.inside);
+                            ret = !_.isUndefined(deref) && ast.is(deref).type("DerefExpr");
+                        } else if (_.isEqual(p.type.name, "LIST")) {
+                            var deref = _.last(src.selector.inside);
+                            ret = !_.isUndefined(deref) && ast.is(deref).type("DerefExpr");
+                        } else if (_.isEqual(o.type.name, "CHAR") && _.isEqual(p.type.name, "STRING")){
+                            var index = _.last(src.selector.inside);
+                            ret = !_.isUndefined(index);
+                        }
+                    }
+                    break;
+                case "STRING":
+                case "MAP":
+                case "LIST":
+                case "BLOCK":
+                    ret = true; //TODO fix type check
+                    break;
+                default: throw new Error(`unsupported type check ${o.type.name}`)
+            }
+        }
+
+        if (ast.is(tgt).type("Selector")){
+            if(ast.is(src).type("ConstExpr")) {
+                sel4const();
+            } else if(ast.is(src).type("SelectExpr")){
+                sel4sel();
+            } else {
+                throw new Error(`incompatible source ${src.constructor.name}`);
+            }
+        } else {
+            throw new Error(`incompatible target ${tgt.constructor.name}`);
+        }
+        return ret;
     }
 }
 

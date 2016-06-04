@@ -53,12 +53,12 @@ module.exports = function (f) {
             ps.mod().then(
                 mod => {
                 should.exist(mod);
-                console.dir(mod, {depth: null});
+                //console.dir(mod, {depth: null});
                 { //definition of module
                     var wr = rerequire("./ir/def.js").writer(mod);
                     writeTarget(root+"/"+mod.name+".od").then(wr);
                     var rd = rerequire("./ir/def.js").reader(function (def) {
-                        console.dir(def, {depth: null});
+                        //console.dir(def, {depth: null});
                     });
                     readSource(root+"/"+mod.name+".od").then(rd);
                 }
