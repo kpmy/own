@@ -53,6 +53,38 @@ function Builder(mod, st) {
         }
     };
 
+    b.params = function (params, block) {
+        //ordered param objects list
+        var fp = [];
+        if (_.isObject(block)){
+            fp = Array.from(Object.keys(block.objects))
+                .filter(k => _.isObject(block.objects[k].param))
+                .map(k => block.objects[k])
+                .sort((p0, p1) => p0.param.number - p1.param.number);
+        }
+
+        params.forEach((p, i, $) => {
+            if(i > 0) b.ln(",");
+            var valueParam = true;
+            if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
+                if (ast.is(p.expression).type("SelectExpr")){
+                    b.sel(p.expression.selector);
+                    valueParam = false;
+                }
+            } else if (_.isUndefined(block)){
+                if (ast.is(p).type("SelectExpr")){
+                    b.sel(p.selector);
+                } else {
+                    b.expr(p);
+                }
+                valueParam = false;
+            }
+            if (valueParam) {
+                b.expr(p.expression);
+            }
+        });
+    };
+
     b.expr = function (e) {
         st.write("(");
         if(ast.is(e).type("ConstExpr")) {
@@ -110,27 +142,8 @@ function Builder(mod, st) {
                 block = mod.thisBlock(e.name);
             }
             should.exist(block); //ast.Block or object from def
-
-            //ordered param objects list
-            var fp = Array.from(Object.keys(block.objects))
-                .filter(k => _.isObject(block.objects[k].param))
-                .map(k => block.objects[k])
-                .sort((p0, p1) => p0.param.number - p1.param.number);
-            
             st.write(`${m}.$${e.name}(`);
-            e.params.forEach((p, i, $) => {
-                if(i > 0) b.ln(",");
-                var valueParam = true;
-                if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
-                    if (ast.is(p.expression).type("SelectExpr")){
-                        b.sel(p.expression.selector);
-                        valueParam = false;
-                    }
-                }
-                if (valueParam) {
-                    b.expr(p.expression);
-                }
-            });
+            b.params(e.params, block);
             st.write(`)`);
         } else if (ast.is(e).type("SelectExpr")){
             st.write("rts.copyOf(");
@@ -152,8 +165,14 @@ function Builder(mod, st) {
             if(!_.isNull(s.expression)) {
                 b.expr(s.expression);
             } else if (!_.isNull(s.selector)){
+                var inside = s.selector.inside.slice();
+                console.log(s.selector.inside);
+                console.log(inside);
+                s.selector.inside = [];
                 b.sel(s.selector);
-                st.write(".call()");
+                st.write(".call(");
+                b.params(inside);
+                st.write(")");
             } else {
                 throw new Error("wrong call");
             }
@@ -181,11 +200,12 @@ function Builder(mod, st) {
         }
         par.forEach((o, i, $) => {
             if(_.isEqual(o.param.type, "reference")){
+                st.write(`if(arguments[${i}] !== undefined){\n`);
                 st.write(`if(!rts.isValue(arguments[${i}])){\n`);
                 st.write(`$${o.name} = arguments[${i}];\n`); //reference param
                 st.write(`} else {\n`);
-                st.write(`$${o.name}.value(arguments[${i}]);`);
-                b.ln("}");
+                st.write(`$${o.name}.value(arguments[${i}]);\n`);
+                b.ln("}"); b.ln("}");
             } else {
                 st.write(`$${o.name}.value(arguments[${i}]);`);
             }

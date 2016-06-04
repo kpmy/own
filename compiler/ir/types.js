@@ -4,7 +4,7 @@
 const should = require("should");
 const _ = require("underscore");
 
-global.NONE = "IAMNONEVALUE";
+global.NONE = {};
 
 function Type(name, parse) {
     let t = this;

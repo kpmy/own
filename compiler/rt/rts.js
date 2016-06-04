@@ -63,8 +63,10 @@ function Obj(t) {
     o.value = function (x) {
         if(!(_.isNull(x) || _.isUndefined(x))){
             should.ok(x instanceof Value);
-            if(_.isEqual(o.type.type.name, "ANY")){
+            if(_.isEqual(o.type.type.name, "ANY")) {
                 o.val = new Value("ANY", x, "utf8");
+            } else if (_.isEqual(o.type.type.name, "BLOCK") && _.isEqual(x.type.name, "ANY") && _.isNull(x.value)){
+                o.val = new Value("BLOCK", null);
             } else {
                 o.val = x;
             }
@@ -141,7 +143,7 @@ function Obj(t) {
         should.ok(_.isEqual(o.type.type.name, "BLOCK"));
         var f = o.val.getNativeValue();
         should.exist(f);
-        f();
+        f(...arguments);
     }
 }
 

@@ -20,6 +20,16 @@ function Parser(sc, resolver) {
 
         e.value = null;
 
+        e.noCall = function () {
+            if (ast.is(e.value).type("CallExpr")){
+                if (e.value.pure)
+                    e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
+                else
+                    p.sc.mark("call is not an expression");
+            }
+            return e;
+        };
+
         e.factor = function () {
             if(p.pr.is(sc.NUM)) {
                 var n = p.pr.num();
@@ -35,8 +45,6 @@ function Parser(sc, resolver) {
                 p.pr.next();
             } else if(p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
-                //var id = p.pr.identifier(p.isMod());
-                //var mod = _.isNull(id.module) ? p.tgt.mod.name : id.module;
                 if (ast.is(obj).type("Selector")) {
                     e.value = ast.expr().select(obj);
                 } else if (ast.is(obj).type("CallExpr")) {
@@ -68,10 +76,10 @@ function Parser(sc, resolver) {
                 var val = [];
                 if(!p.pr.wait(sc.RBRACE, sc.DELIMITER)){
                     for (var stop = false; !stop;) {
-                        var k = new Expression();
+                        var k = new Expression().noCall();
                         p.pr.expect(sc.COLON, sc.DELIMITER);
                         p.pr.next();
-                        var v = new Expression();
+                        var v = new Expression().noCall();
                         val.push([k.value, v.value]);
                         if (!p.pr.wait(sc.COMMA, sc.DELIMITER)){
                             stop = true;
@@ -88,7 +96,7 @@ function Parser(sc, resolver) {
                 var val = [];
                 if(!p.pr.wait(sc.RBRAK, sc.DELIMITER)){
                     for (var stop = false; !stop;){
-                        var v = new Expression();
+                        var v = new Expression().noCall();
                         val.push(v.value);
                         if (!p.pr.wait(sc.COMMA, sc.DELIMITER)){
                             stop = true;
@@ -276,7 +284,7 @@ function Parser(sc, resolver) {
                         c.expression = e.value;
                         b.stmts.push(c);
                     } else if (e.value.pure){ //block reference
-                        e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
+                        e.noCall(); //e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
                     } else {
                         p.sc.mark("not an expression");
                     }
@@ -293,15 +301,17 @@ function Parser(sc, resolver) {
                     //TODO проверить типы слева и справа
                     b.stmts.push(a);
                 } else {
-                    if(ast.is(e.value).type("SelectExpr")){
+                    if(ast.is(e.value).type("SelectExpr")) {
                         var obj = p.tgt.thisObj(e.value.selector);
-                        if(_.isEqual(obj.type.name, "BLOCK")) {
+                        if (_.isEqual(obj.type.name, "BLOCK")) {
                             var a = ast.stmt().call();
                             a.selector = e.value.selector;
                             b.stmts.push(a);
                         } else {
                             p.sc.mark("not a statement");
                         }
+                    } else if(ast.is(e.value).type("CallExpr")){
+                        //do nothing
                     } else {
                         p.sc.mark("not a statement");
                     }

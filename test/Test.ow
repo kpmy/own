@@ -8,10 +8,12 @@ UNIT Test
         ch, ch0 CHAR
         map, map0 MAP
         list LIST
-        proc BLOCK
+        proc, call BLOCK
+        callList LIST
 
     BLOCK Do0
         VAR x INTEGER
+        PAR x^
     BEGIN
         1933 -> x
     END Do0
@@ -33,4 +35,9 @@ START
     {"list": [0, 1, 2, 3]} -> map0
     Do0 -> proc
     proc
+    proc -> call
+    call[int, 2, 3]
+    proc
+    [proc, call, Do0] -> callList
+    NONE -> proc
 END Test
