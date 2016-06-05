@@ -42,15 +42,19 @@ function Parser(sc, resolver) {
 
         e.noCall = function () {
             if (ast.is(e.value).type("CallExpr")) {
-                if (e.value.pure)
-                    e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
-                else
+                if (e.value.pure) {
+                    var ref = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
+                    e.value.fix = function (c) { //fix для ссылок на стандартные функции
+                        ref.value = `${c.module}.${c.name}`;
+                    };
+                    e.value = ref;
+                } else
                     p.sc.mark("call is not an expression");
             }
             return e;
         };
 
-        e.factor = function () { // ~ ! { } [] ...
+        e.factor = function () { // ~ ! {} [] ...
             if (p.pr.is(sc.NUM)) {
                 var n = p.pr.num();
                 e.push(ast.expr().constant(n.type, n.value));
@@ -72,7 +76,12 @@ function Parser(sc, resolver) {
                     if (!exists && _.isEqual(obj.module, p.tgt.mod.name)) {
                         var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
                         var f = function (res, rej) {
+                            var std = p.tgt.std();
                             if (p.tgt.isBlock(obj.module, obj.name)) {
+                                res();
+                            } else if (!_.isNull(std.thisBlock(obj.name))) {
+                                obj.module = "$std";
+                                obj.fix(obj);
                                 res();
                             } else {
                                 mark();

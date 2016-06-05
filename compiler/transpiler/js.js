@@ -314,6 +314,10 @@ module.exports = function (mod, resolve) {
     should.exist(resolve);
     return function (stream) {
         should.exist(stream);
+        var std = ast.imp();
+        std.name = "$std";
+        std.alias = "";
+        mod.imports.push(std);
         var pl = [];
         mod.imports.forEach(i => {
             pl.push(resolve(i.name));

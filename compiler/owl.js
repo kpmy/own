@@ -37,12 +37,19 @@ module.exports = function (f) {
     var root = process.cwd()+"/test";
 
     var resolveDef = function (name) {
-        return new Promise(function (res, rej) {
-            var rd = rerequire("./ir/def.js").reader(function (def) {
-                res(def);
+        if (_.isEqual(name, "$std")) {
+            return new Promise((r, x) => {
+                var std = rerequire("./ir/def.js").std();
+                r(std);
             });
-            readSource(root+"/"+name+".od").then(rd);
-        });
+        } else {
+            return new Promise(function (res, rej) {
+                var rd = rerequire("./ir/def.js").reader(function (def) {
+                    res(def);
+                });
+                readSource(root + "/" + name + ".od").then(rd);
+            });
+        }
     };
 
     readSource(f).then(

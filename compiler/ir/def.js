@@ -62,6 +62,39 @@ function Reader(ret, stream) {
     }
 }
 
+module.exports.std = function () {
+    var std = {
+        name: "$std",
+        imports: [],
+        objects: {},
+        blocks: [
+            {
+                name: "INC",
+                objects: {
+                    "x": {
+                        name: "x",
+                        type: {name: "INTEGER"},
+                        param: {type: "reference", number: 0}
+                    }
+                }
+            },
+            {
+                name: "DEC",
+                objects: {
+                    "x": {
+                        name: "x",
+                        type: {name: "INTEGER"},
+                        param: {type: "reference", number: 0}
+                    }
+                }
+            }
+        ]
+    };
+    var res = ast.def();
+    res = Object.assign(res, std);
+    return res;
+};
+
 module.exports.writer = function (mod) {
     should.exist(mod);
     return function (stream) {

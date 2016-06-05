@@ -1,6 +1,7 @@
 /* Created by kpmy on 12.05.2016 */
 const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
+const def = rerequire("./ir/def.js");
 const should = require("should");
 const Promise = require("bluebird");
 
@@ -34,6 +35,14 @@ function Target(name, sc) {
     this.mod.name = name;
     this._bstack = [];
     this._resolvers = [];
+
+    t.std = function () {
+        var std = ast.imp();
+        std.name = "$std";
+        std.alias = "";
+        std.def = def.std();
+        return std;
+    };
     
     t.isMod = function (id) {
         var ok = false;

@@ -472,6 +472,27 @@ function ValueMath() {
     }
 }
 
+function Std() {
+    const std = this;
+
+    std.$INC = function (x) {
+        should.ok(x instanceof Obj);
+        should.ok(x.type.base.name == "INTEGER");
+        var i = x.value().getNativeValue();
+        x.value(new Value("INTEGER", i + 1))
+    };
+
+    std.$DEC = function (x) {
+        should.ok(x instanceof Obj);
+        should.ok(x.type.base.name == "INTEGER");
+        var i = x.value().getNativeValue();
+        x.value(new Value("INTEGER", i - 1));
+    };
+
+    std.start = function () {
+    }
+}
+
 function RTS(pwd) {
     const rts = this;
 
@@ -490,7 +511,7 @@ function RTS(pwd) {
             return rts.modulesCache[name];
         }
         console.log(`load ${name}`);
-        var mod = rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
+        var mod = _.isEqual(name, "$std") ? new Std() : rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
         should.exist(mod);
         rts.modules.push(mod);
         rts.modulesCache[name] = mod;

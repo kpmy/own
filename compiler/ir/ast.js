@@ -103,6 +103,8 @@ function CallExpr() {
 
     //transient
     this.pure = true;
+    this.fix = function () {
+    };
     
     this.param = function (e) {
         return new Param(e);

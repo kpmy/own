@@ -1,0 +1,11 @@
+UNIT Test7
+    VAR i INTEGER;
+    VAR proc BLOCK
+START
+    INC[i]
+    INC[i]
+    INC[i]
+    DEC[i]
+    INC -> proc
+    proc[i]
+END Test7
