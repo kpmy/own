@@ -177,18 +177,22 @@ function Builder(mod, st) {
             st.write("rts.copyOf(");
             b.sel(e.selector);
             st.write(".value())");
-        } else if (ast.is(e).type("DyadicOp")){
+        } else if (ast.is(e).type("DyadicOp")) {
             st.write("rts.math.dop(");
-            st.write("function(){");
-            st.write("return ");
+            st.write("function(){return ");
             b.expr(e.left);
             st.write("}, ");
             st.write(`"${e.op}", `);
-            st.write("function(){");
-            st.write("return ");
+            st.write("function(){return ");
             b.expr(e.right);
             st.write("}");
             st.write(")");
+        } else if (ast.is(e).type("MonadicOp")){
+            st.write(`rts.math.mop("${e.op}", `);
+            st.write("function(){return ");
+            b.expr(e.expr);
+            st.write("}");
+            st.write(")")
         } else {
             throw new Error("unknown expression " + e.constructor.name);
         }

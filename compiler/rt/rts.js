@@ -301,6 +301,7 @@ Value.prototype.getNativeValue = function(){
         case "STRING":
         case "CHAR":
         case "BLOCK":
+        case "BOOLEAN":
         case "LIST":
             ret = v.value;
             break;
@@ -342,18 +343,81 @@ function ValueMath() {
     const m = this;
     m.nativeOp = {
         "+": "+",
-        "-": "-"
+        "-": "-",
+        "*": "*",
+        "|" : "||",
+        "&": "&&",
+        "~": "!",
+        "=": "==",
+        "<": "<",
+        ">": ">",
+        "<=": "<=",
+        ">=": ">=",
+        "#": "!="
     };
+
     m.olrmap = {}; //{op : {left type : {right type : result type
-    m.olrmap["+"] = {
+    m.olrmap["-"] = m.olrmap["*"] = m.olrmap["+"]= {
         "INTEGER": {
             "INTEGER": "INTEGER"
         }
     };
-    m.olrmap["-"] = m.olrmap["+"];
+
+    m.olrmap["|"] = m.olrmap["&"] = {
+        "BOOLEAN": {
+            "BOOLEAN": "BOOLEAN"
+        }
+    };
+
+    m.olrmap["<"] = m.olrmap[">"] = m.olrmap["<="] = m.olrmap[">="] = m.olrmap["#"] = m.olrmap["="] = {
+        "INTEGER": {
+            "INTEGER": "BOOLEAN"
+        }
+    };
+
+    m.oemap = {};
+    m.oemap["-"] = {
+        "INTEGER": "INTEGER"
+    };
+    m.oemap["~"] = {
+        "BOOLEAN": "BOOLEAN"
+    };
 
     m.value = function () {
         return new Value(...arguments);
+    };
+
+    m.mop = function (op, v) {
+        function val() {
+            var ret = v();
+            should.ok(ret instanceof Value);
+            return ret
+        }
+        var body = `throw new Error("not implemented")`;
+        if (!_.isUndefined(m.nativeOp[op])) {
+            body = (`
+                const op = "${op}";
+                
+                var emap = this.oemap[op];
+                if(emap === undefined) throw new Error("unknown op "+op);
+                
+                var val = v();
+                var rt = emap[val.type.name];
+                if(rt === undefined) throw new Error("unknown expr type "+val.type.name);
+           
+                if(typeof this.nativeOp[op] == "string") {
+                    var ret = ${m.nativeOp[op]}val.getNativeValue();
+                } else {
+                    throw new Error("not implemented");
+                }
+                return this.value(rt, ret);
+                `);
+        } else {
+            throw new Error(`not implemented for ${op}`);
+        }
+        var fn = new Function(`v`, body);
+        var mfn = fn.bind(m);
+        return mfn(val);
     };
 
     m.dop = function (lv, op, rv) {
@@ -379,19 +443,24 @@ function ValueMath() {
                 var rmap = lrmap[left.type.name];
                 if(rmap === undefined) throw new Error("unknown left type "+left.type.name);
                 
+                if(left.type.name == "BOOLEAN"){ //short boolean ops
+                    if(op == "|" && left.getNativeValue())
+                        return this.value("BOOLEAN", true);
+                    if(op == "&" && !left.getNativeValue())
+                        return this.value("BOOLEAN", false);
+                }
+                
                 var right = r();
                 
                 var rt = rmap[right.type.name];
                 if(rt === undefined) throw new Error("unknown right type "+right.type.name);
-             `);
-            if(typeof m.nativeOp[op] == "string") {
-                body = body + (`
-                var ret = left.getNativeValue() ${m.nativeOp[op]} right.getNativeValue();
-                `);
-            } else {
-                throw new Error("not implemented");
-            }
-            body = body + (`
+            
+                if(typeof this.nativeOp[op] == "string") {
+                    var ret = left.getNativeValue() ${m.nativeOp[op]} right.getNativeValue();
+                } else {
+                    throw new Error("not implemented");
+                }
+           
                 return this.value(rt, ret);`
                 );
         } else {

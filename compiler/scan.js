@@ -59,10 +59,17 @@ function Scanner(stream) {
     this.RBRAK = thisSym("]");
     this.TIMES = thisSym("*");
     this.CIRC = thisSym("^");
-    this.LSS = thisSym("<");
-    this.GTR = thisSym(">");
     this.COLON = thisSym(":");
     this.DOLLAR = thisSym("$");
+    this.PIPE = thisSym("|");
+    this.AMP = thisSym("&");
+    this.TILD = thisSym("~");
+    this.EQL = thisSym("=");
+    this.NEQ = thisSym("#");
+    this.LSS = thisSym("<");
+    this.GTR = thisSym(">");
+    this.LEQ = thisSym("<=");
+    this.GEQ = thisSym(">=");
     
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -288,16 +295,24 @@ function Scanner(stream) {
                 sym = this.RBRACE;
                 break;
             case "<":
-                if(this.next() == "<"){
+                var n = this.next();
+                if(n == "<") {
                     sym = this.LBRUX;
+                    this.next();
+                } else if (n == "="){
+                    sym = this.LEQ;
                     this.next();
                 } else {
                     sym = this.LSS;
                 }
                 break;
             case ">":
-                if(this.next() == ">"){
+                var n = this.next();
+                if(n == ">") {
                     sym = this.RBRUX;
+                    this.next();
+                } else if (n == "="){
+                    sym = this.GEQ;
                     this.next();
                 } else {
                     sym = this.GTR;
@@ -330,6 +345,26 @@ function Scanner(stream) {
             case "+":
                 this.next();
                 sym = this.PLUS;
+                break;
+            case "|":
+                this.next();
+                sym = this.PIPE;
+                break;
+            case "&":
+                this.next();
+                sym = this.AMP;
+                break;
+            case "~":
+                this.next();
+                sym = this.TILD;
+                break;
+            case "#":
+                this.next();
+                sym = this.NEQ;
+                break;
+            case "=":
+                this.next();
+                sym = this.EQL;
                 break;
             case " ":
             case "\t":

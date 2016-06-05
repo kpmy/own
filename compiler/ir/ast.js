@@ -127,6 +127,11 @@ function DyadicOp() {
     this.op = null;
 }
 
+function MonadicOp() {
+    this.op = null;
+    this.expr = null;
+}
+
 function Expr() {
     this.constant = function (type, value) {
         var ret = new ConstExpr();
@@ -159,6 +164,12 @@ function Expr() {
 
     this.dyadic = function (op) {
         var ret = new DyadicOp();
+        ret.op = op;
+        return ret;
+    };
+    
+    this.monadic = function (op) {
+        var ret = new MonadicOp();
         ret.op = op;
         return ret;
     }
@@ -233,5 +244,5 @@ module.exports.isStatement = function (x) {
 };
 
 module.exports.isExpression = function (x) {
-    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr) || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp);
+    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr) || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp) || (x instanceof MonadicOp);
 };

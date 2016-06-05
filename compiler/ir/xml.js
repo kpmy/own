@@ -96,11 +96,16 @@ function Writer(mod, stream) {
             root.push({"deref-expression": {}})
         } else if (ast.is(e).type("DotExpr")) {
             root.push({"dot-expression": {}})
-        } else if (ast.is(e).type("DyadicOp")){
+        } else if (ast.is(e).type("DyadicOp")) {
             var op = xml.element({_attr: {"op": e.op}});
             root.push({"dyadic-op": op});
             w.expr(e.left, "left", op);
             w.expr(e.right, "right", op);
+            op.close();
+        } else if(ast.is(e).type("MonadicOp")){
+            var op = xml.element({_attr: {"op": e.op}});
+            root.push({"monadic-op": op});
+            w.expr(e.expr, "expression", op);
             op.close();
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
@@ -428,6 +433,14 @@ function Reader(ret, stream) {
                         }
                     });
                     break;
+                case "monadic-op":
+                    var op = ast.expr().monadic(n.attributes["op"]);
+                    push(op);
+                    stack.push(function (x) {
+                        should.ok(ast.isExpression(x));
+                        op.expr = x;
+                    });
+                    break;
                 default:
                     throw new Error("unknown tag "+n.name);
             }
@@ -459,6 +472,7 @@ function Reader(ret, stream) {
                 case "parameter":
                 case "selector":
                 case "dyadic-op":
+                case "monadic-op":
                     stack.pop();
                     break;
                 case "expression":

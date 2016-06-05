@@ -1,7 +1,18 @@
 UNIT Test6
     VAR i, j, k INTEGER
+    VAR p, q, r BOOLEAN
 START
     1 -> i
     2 -> j
-    i + j -> k
+    i + j + 5 -> k
+    -i -> j
+    2 + 2 * 2 -> i
+    (2 + 2) * 2 -> k
+    FALSE | TRUE -> p
+    FALSE & TRUE -> q
+    ~q & p -> r
+    1 = 1 -> p
+    1 # 1 -> q
+    1 > 2 | 2 < 3 -> r
+    1 >= 2 | 2 <= 3 -> r
 END Test6

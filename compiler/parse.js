@@ -22,8 +22,8 @@ function Parser(sc, resolver) {
         e.stack = [];
 
         e.pop = function () {
-            console.log("pop");
-            //should.ok(!_.isEmpty(e.stack));
+            //console.log("pop");
+            should.ok(!_.isEmpty(e.stack));
             return e.stack.pop();
         };
 
@@ -31,6 +31,10 @@ function Parser(sc, resolver) {
             if(ast.is(x).type("DyadicOp")){
                 x.right = e.pop();
                 x.left = e.pop();
+            } else if (ast.is(x).type("MonadicOp")){
+                x.expr = e.pop();
+            } else if (x instanceof Expression){
+                x = x.value;
             }
             //console.log("push", JSON.stringify(x));
             e.stack.push(x);
@@ -109,14 +113,14 @@ function Parser(sc, resolver) {
                 }
                 p.pr.next();
                 e.push(ast.expr().constant(types.MAP, val));
-            } else if(p.pr.is(sc.LBRAK)){
+            } else if(p.pr.is(sc.LBRAK)) {
                 p.pr.next();
                 var val = [];
-                if(!p.pr.wait(sc.RBRAK, sc.DELIMITER)){
-                    for (var stop = false; !stop;){
+                if (!p.pr.wait(sc.RBRAK, sc.DELIMITER)) {
+                    for (var stop = false; !stop;) {
                         var v = new Expression().noCall();
                         val.push(v.value);
-                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)) {
                             stop = true;
                         } else {
                             p.pr.next();
@@ -126,6 +130,17 @@ function Parser(sc, resolver) {
                 }
                 p.pr.next();
                 e.push(ast.expr().constant(types.LIST, val));
+            } else if (p.pr.is(sc.LPAREN)) {
+                p.pr.next();
+                var ee = new Expression();
+                p.pr.expect(sc.RPAREN, sc.DELIMITER);
+                p.pr.next();
+                e.push(ee);
+            } else if (p.pr.is(sc.TILD)){
+                p.pr.next();
+                e.factor();
+                p.pr.pass(sc.DELIMITER);
+                e.push(ast.expr().monadic(sc.TILD.code));
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }
@@ -140,15 +155,35 @@ function Parser(sc, resolver) {
         };
 
         e.product = function () { // * / // %
+            p.pr.pass(sc.DELIMITER);
             e.power();
+            for (var stop = false; !stop;){
+                p.pr.pass(sc.DELIMITER);
+                if(p.pr.is(sc.TIMES)){
+                    var op = p.pr.sym.code;
+                    p.pr.next();
+                    p.pr.pass(sc.DELIMITER);
+                    e.power();
+                    e.push(ast.expr().dyadic(op));
+                } else {
+                    stop = true;
+                }
+            }
         };
 
         e.quantum = function () { // -- + -
-            p.pr.pass(sc.DELIMITER);
-            e.product();
+            if(p.pr.is(sc.MINUS)){
+                p.pr.next();
+                p.pr.pass(sc.DELIMITER);
+                e.product();
+                e.push(ast.expr().monadic(sc.MINUS.code));
+            } else {
+                p.pr.pass(sc.DELIMITER);
+                e.product();
+            }
             for (var stop = false; !stop;){
                 p.pr.pass(sc.DELIMITER);
-                if(p.pr.is(sc.PLUS) || p.pr.is(sc.MINUS)){
+                if(p.pr.in(sc.PLUS, sc.MINUS)){
                     var op = p.pr.sym.code;
                     p.pr.next();
                     p.pr.pass(sc.DELIMITER);
@@ -161,15 +196,52 @@ function Parser(sc, resolver) {
         };
 
         e.compare = function () { // = # < <= => >
+            p.pr.pass(sc.DELIMITER);
             e.quantum();
+            p.pr.pass(sc.DELIMITER);
+            if(p.pr.in(sc.EQL, sc.NEQ, sc.GEQ, sc.LEQ, sc.LSS, sc.GTR)){
+                var op = p.pr.sym.code;
+                p.pr.next();
+                p.pr.pass(sc.DELIMITER);
+                e.quantum();
+                e.push(ast.expr().dyadic(op));
+            }
         };
 
-        e.logic = function () { // & |
+        e.and = function () { // &
+            p.pr.pass(sc.DELIMITER);
             e.compare();
+            for (var stop = false; !stop;){
+                p.pr.pass(sc.DELIMITER);
+                if(p.pr.is(sc.AMP)){
+                    p.pr.next();
+                    p.pr.pass(sc.DELIMITER);
+                    e.compare();
+                    e.push(ast.expr().dyadic(sc.AMP.code));
+                } else {
+                    stop = true;
+                }
+            }
+        };
+
+        e.or = function () { // |
+            p.pr.pass(sc.DELIMITER);
+            e.and();
+            for (var stop = false; !stop;){
+                p.pr.pass(sc.DELIMITER);
+                if(p.pr.is(sc.PIPE)){
+                    p.pr.next();
+                    p.pr.pass(sc.DELIMITER);
+                    e.and();
+                    e.push(ast.expr().dyadic(sc.PIPE.code));
+                } else {
+                    stop = true;
+                }
+            }
         };
 
         e.expression = function () { //  ? :
-            e.logic();
+            e.or();
         };
 
         p.pr.pass(sc.DELIMITER);
@@ -278,7 +350,7 @@ function Parser(sc, resolver) {
                     sel.inside.push(ast.expr().dot());
                 }
                 for (var end = false; !end;) {
-                    var e = new Expression(b);
+                    var e = new Expression();
                     if (!ast.is(e.value).type("CallExpr")) {
                         sel.inside.push(e.value);
                     } else {
@@ -298,7 +370,6 @@ function Parser(sc, resolver) {
                 stop = true;
             }
         }
-        console.log("foreign", foreign);
         if(p.tgt.isObj(sel.module, sel.name)) {
             if (!foreign) {
                 if (!p.tgt.block().isModule) {
@@ -339,7 +410,7 @@ function Parser(sc, resolver) {
                 //do nothing, handled in .block
                 stop = true;
             } else { //expr -> obj
-                var e = new Expression(b);
+                var e = new Expression();
                 //console.log(e.value);
                 if(ast.is(e.value).type("CallExpr")){
                     if(!p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
@@ -450,7 +521,7 @@ function Parser(sc, resolver) {
 
     p.block = function (b, sym) {
         if(_.isEqual(sym, sc.UNIT)) {
-            if (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
+            while (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
             p.tgt.mod.objects = b.objects;
@@ -495,7 +566,7 @@ function Parser(sc, resolver) {
                 p.pr.next();
                 b.exported = true;
             }
-            if (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
+            while (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
             if(p.pr.wait(sc.PAR, sc.DELIMITER, sc.SEPARATOR)){

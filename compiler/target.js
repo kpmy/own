@@ -176,8 +176,10 @@ function Target(name, sc) {
                 sel4const();
             } else if(ast.is(src).type("SelectExpr")) {
                 sel4sel();
-            } else if(ast.is(src).type("DyadicOp")){
+            } else if(ast.is(src).type("DyadicOp")) {
                 ret = true; //TODO fix op type check
+            } else if (ast.is(src).type("MonadicOp")){
+                ret = true;
             } else {
                 throw new Error(`incompatible source ${src.constructor.name}`);
             }

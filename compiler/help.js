@@ -16,6 +16,14 @@ function Helper(sc) {
         return _.isEqual(this.sym.code, sym);
     };
     
+    this.in = function () {
+        var ret = false;
+        ret = Array.prototype.slice.call(arguments, 0)
+            .filter(a => _.isEqual(h.sym.code, a.code))
+            .concat().length > 0;
+        return ret;
+    };
+    
     this.is = function (sym) {
         should.exist(sym);
         return _.isEqual(this.sym.code, sym.code);
