@@ -28,12 +28,12 @@ function Parser(sc, resolver) {
         };
 
         e.push = function (x) {
-            if(ast.is(x).type("DyadicOp")){
+            if (ast.is(x).type("DyadicOp")) {
                 x.right = e.pop();
                 x.left = e.pop();
-            } else if (ast.is(x).type("MonadicOp")){
+            } else if (ast.is(x).type("MonadicOp")) {
                 x.expr = e.pop();
-            } else if (x instanceof Expression){
+            } else if (x instanceof Expression) {
                 x = x.value;
             }
             //console.log("push", JSON.stringify(x));
@@ -41,7 +41,7 @@ function Parser(sc, resolver) {
         };
 
         e.noCall = function () {
-            if (ast.is(e.value).type("CallExpr")){
+            if (ast.is(e.value).type("CallExpr")) {
                 if (e.value.pure)
                     e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
                 else
@@ -51,35 +51,35 @@ function Parser(sc, resolver) {
         };
 
         e.factor = function () { // ~ ! { } [] ...
-            if(p.pr.is(sc.NUM)) {
+            if (p.pr.is(sc.NUM)) {
                 var n = p.pr.num();
                 e.push(ast.expr().constant(n.type, n.value));
                 p.pr.next();
-            } else if(p.pr.is(sc.STR)){
+            } else if (p.pr.is(sc.STR)) {
                 var s = p.pr.sym;
-                if(s.apos && s.value.length == 1){
+                if (s.apos && s.value.length == 1) {
                     e.push(ast.expr().constant(types.CHAR, s.value))
                 } else {
                     e.push(ast.expr().constant(types.STRING, s.value));
                 }
                 p.pr.next();
-            } else if(p.pr.is(sc.IDENT)) {
+            } else if (p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
                 if (ast.is(obj).type("Selector")) {
                     e.push(ast.expr().select(obj));
                 } else if (ast.is(obj).type("CallExpr")) {
                     var exists = p.tgt.isBlock(obj.module, obj.name);
-                    if (!exists && _.isEqual(obj.module, p.tgt.mod.name)){
+                    if (!exists && _.isEqual(obj.module, p.tgt.mod.name)) {
                         var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
-                        var f = function (res, rej){
-                            if(p.tgt.isBlock(obj.module, obj.name)){
+                        var f = function (res, rej) {
+                            if (p.tgt.isBlock(obj.module, obj.name)) {
                                 res();
                             } else {
                                 mark();
                             }
                         };
                         p.tgt._resolvers.push(f);
-                    } else if (!exists){
+                    } else if (!exists) {
                         p.sc.mark("imported object or block not found");
                     }
                     e.push(obj)
@@ -87,23 +87,23 @@ function Parser(sc, resolver) {
                     p.sc.mark(`invalid object or call`);
                 }
                 //p.pr.next(); done later
-            } else if(p.pr.is(sc.TRUE) || p.pr.is(sc.FALSE)) {
+            } else if (p.pr.is(sc.TRUE) || p.pr.is(sc.FALSE)) {
                 e.push(ast.expr().constant(types.BOOLEAN, p.pr.is(sc.TRUE)));
                 p.pr.next();
-            } else if(p.pr.is(sc.NONE)) {
+            } else if (p.pr.is(sc.NONE)) {
                 e.push(ast.expr().constant(types.ANY, "NONE"));
                 p.pr.next();
-            } else if(p.pr.is(sc.LBRACE)) {
+            } else if (p.pr.is(sc.LBRACE)) {
                 p.pr.next();
                 var val = [];
-                if(!p.pr.wait(sc.RBRACE, sc.DELIMITER)){
+                if (!p.pr.wait(sc.RBRACE, sc.DELIMITER)) {
                     for (var stop = false; !stop;) {
                         var k = new Expression().noCall();
                         p.pr.expect(sc.COLON, sc.DELIMITER);
                         p.pr.next();
                         var v = new Expression().noCall();
                         val.push([k.value, v.value]);
-                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)) {
                             stop = true;
                         } else {
                             p.pr.next();
@@ -113,7 +113,7 @@ function Parser(sc, resolver) {
                 }
                 p.pr.next();
                 e.push(ast.expr().constant(types.MAP, val));
-            } else if(p.pr.is(sc.LBRAK)) {
+            } else if (p.pr.is(sc.LBRAK)) {
                 p.pr.next();
                 var val = [];
                 if (!p.pr.wait(sc.RBRAK, sc.DELIMITER)) {
@@ -136,7 +136,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.RPAREN, sc.DELIMITER);
                 p.pr.next();
                 e.push(ee);
-            } else if (p.pr.is(sc.TILD)){
+            } else if (p.pr.is(sc.TILD)) {
                 p.pr.next();
                 e.factor();
                 p.pr.pass(sc.DELIMITER);
@@ -157,9 +157,9 @@ function Parser(sc, resolver) {
         e.product = function () { // * / // %
             p.pr.pass(sc.DELIMITER);
             e.power();
-            for (var stop = false; !stop;){
+            for (var stop = false; !stop;) {
                 p.pr.pass(sc.DELIMITER);
-                if(p.pr.is(sc.TIMES)){
+                if (p.pr.is(sc.TIMES)) {
                     var op = p.pr.sym.code;
                     p.pr.next();
                     p.pr.pass(sc.DELIMITER);
@@ -172,7 +172,7 @@ function Parser(sc, resolver) {
         };
 
         e.quantum = function () { // -- + -
-            if(p.pr.is(sc.MINUS)){
+            if (p.pr.is(sc.MINUS)) {
                 p.pr.next();
                 p.pr.pass(sc.DELIMITER);
                 e.product();
@@ -181,9 +181,9 @@ function Parser(sc, resolver) {
                 p.pr.pass(sc.DELIMITER);
                 e.product();
             }
-            for (var stop = false; !stop;){
+            for (var stop = false; !stop;) {
                 p.pr.pass(sc.DELIMITER);
-                if(p.pr.in(sc.PLUS, sc.MINUS)){
+                if (p.pr.in(sc.PLUS, sc.MINUS)) {
                     var op = p.pr.sym.code;
                     p.pr.next();
                     p.pr.pass(sc.DELIMITER);
@@ -199,7 +199,7 @@ function Parser(sc, resolver) {
             p.pr.pass(sc.DELIMITER);
             e.quantum();
             p.pr.pass(sc.DELIMITER);
-            if(p.pr.in(sc.EQL, sc.NEQ, sc.GEQ, sc.LEQ, sc.LSS, sc.GTR)){
+            if (p.pr.in(sc.EQL, sc.NEQ, sc.GEQ, sc.LEQ, sc.LSS, sc.GTR)) {
                 var op = p.pr.sym.code;
                 p.pr.next();
                 p.pr.pass(sc.DELIMITER);
@@ -211,9 +211,9 @@ function Parser(sc, resolver) {
         e.and = function () { // &
             p.pr.pass(sc.DELIMITER);
             e.compare();
-            for (var stop = false; !stop;){
+            for (var stop = false; !stop;) {
                 p.pr.pass(sc.DELIMITER);
-                if(p.pr.is(sc.AMP)){
+                if (p.pr.is(sc.AMP)) {
                     p.pr.next();
                     p.pr.pass(sc.DELIMITER);
                     e.compare();
@@ -227,9 +227,9 @@ function Parser(sc, resolver) {
         e.or = function () { // |
             p.pr.pass(sc.DELIMITER);
             e.and();
-            for (var stop = false; !stop;){
+            for (var stop = false; !stop;) {
                 p.pr.pass(sc.DELIMITER);
-                if(p.pr.is(sc.PIPE)){
+                if (p.pr.is(sc.PIPE)) {
                     p.pr.next();
                     p.pr.pass(sc.DELIMITER);
                     e.and();
@@ -258,33 +258,33 @@ function Parser(sc, resolver) {
 
     p.imp = function (b) {
         var cache = {};
-        while(p.pr.wait(sc.IMPORT, sc.SEPARATOR, sc.DELIMITER)){
+        while (p.pr.wait(sc.IMPORT, sc.SEPARATOR, sc.DELIMITER)) {
             p.pr.next();
-            for(var stop = false; !stop;){
-                if (p.pr.wait(sc.IDENT, sc.SEPARATOR, sc.DELIMITER)){
+            for (var stop = false; !stop;) {
+                if (p.pr.wait(sc.IDENT, sc.SEPARATOR, sc.DELIMITER)) {
                     should.ok(!p.isMod());
                     const name = p.pr.identifier().id;
                     var alias = "";
                     p.pr.next();
-                    if (p.pr.wait(sc.ASSIGN, sc.DELIMITER)){
+                    if (p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
                         p.pr.next();
                         p.pr.expect(sc.IDENT, sc.DELIMITER);
                         alias = p.pr.ident();
                         p.pr.next();
                     }
                     var imp = ast.imp();
-                    if(!b.hasImport(alias)){
-                        if (_.isEqual(name, p.tgt.mod.name)){
+                    if (!b.hasImport(alias)) {
+                        if (_.isEqual(name, p.tgt.mod.name)) {
                             p.sc.mark("module cannot import itself");
                         }
                         imp.name = name;
                         imp.alias = alias;
-                        if(!cache.hasOwnProperty(name)){
+                        if (!cache.hasOwnProperty(name)) {
                             var noCycleCheck = function (def) {
                                 cache[name].def = def;
                                 const noCycle = function (i) {
                                     i.def.imports.forEach(function (ii) {
-                                        if(_.isEqual(ii, p.tgt.mod.name)){
+                                        if (_.isEqual(ii, p.tgt.mod.name)) {
                                             p.sc.mark("cyclic import from ", i.name);
                                         } else {
                                             p.resolve(ii).then(noCycleCheck);
@@ -300,7 +300,7 @@ function Parser(sc, resolver) {
                     } else {
                         p.sc.mark("import already exists ", alias);
                     }
-                } else if (Object.keys(cache).length > 0){
+                } else if (Object.keys(cache).length > 0) {
                     stop = true;
                 } else {
                     p.sc.mark("nothing to import");
@@ -315,7 +315,7 @@ function Parser(sc, resolver) {
         let tid = p.pr.identifier().id;
         var t = types.find(tid);
         p.pr.next();
-        if (!_.isNull(t)){
+        if (!_.isNull(t)) {
             ft(t);
         } else {
             p.sc.mark("type not found ", tid);
@@ -326,7 +326,7 @@ function Parser(sc, resolver) {
         should.ok(p.pr.is(sc.IDENT));
         return p.tgt.isMod(p.pr.sym.value);
     };
-    
+
     p.obj = function (b) {
         should.ok(p.pr.is(sc.IDENT));
         const foreign = p.isMod();
@@ -338,15 +338,15 @@ function Parser(sc, resolver) {
         var pure = true;
         var deref = false;
         var cascade = 0;
-        for(var stop = false; !stop;) {
+        for (var stop = false; !stop;) {
             if (p.pr.wait(sc.DOLLAR)) {
                 p.pr.next();
                 pure = false;
                 deref = true;
                 sel.inside.push(ast.expr().deref());
-            }else if (p.pr.wait(sc.LBRAK)) {
+            } else if (p.pr.wait(sc.LBRAK)) {
                 p.pr.next();
-                if (cascade){
+                if (cascade) {
                     sel.inside.push(ast.expr().dot());
                 }
                 for (var end = false; !end;) {
@@ -366,11 +366,11 @@ function Parser(sc, resolver) {
                 p.pr.next();
                 cascade++;
                 pure = false;
-            }else {
+            } else {
                 stop = true;
             }
         }
-        if(p.tgt.isObj(sel.module, sel.name)) {
+        if (p.tgt.isObj(sel.module, sel.name)) {
             if (!foreign) {
                 if (!p.tgt.block().isModule) {
                     if (p.tgt.block().objects.hasOwnProperty(sel.name)) {
@@ -387,7 +387,7 @@ function Parser(sc, resolver) {
                 }
             }
             return sel;
-        } else if (foreign && !p.tgt.isBlock(sel.module, sel.name)){
+        } else if (foreign && !p.tgt.isBlock(sel.module, sel.name)) {
             p.sc.mark(`identifier not found ${sel.module} ${sel.name}`);
         } else {
             if (deref || cascade > 1)
@@ -404,7 +404,7 @@ function Parser(sc, resolver) {
 
     p.stmts = function (b) {
         b.stmts = [];
-        for(var stop = false; !stop;){
+        for (var stop = false; !stop;) {
             p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
             if (p.pr.is(sc.END)) {
                 //do nothing, handled in .block
@@ -412,12 +412,12 @@ function Parser(sc, resolver) {
             } else { //expr -> obj
                 var e = new Expression();
                 //console.log(e.value);
-                if(ast.is(e.value).type("CallExpr")){
-                    if(!p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
+                if (ast.is(e.value).type("CallExpr")) {
+                    if (!p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
                         var c = ast.stmt().call();
                         c.expression = e.value;
                         b.stmts.push(c);
-                    } else if (e.value.pure){ //block reference
+                    } else if (e.value.pure) { //block reference
                         e.noCall(); //e.value = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
                     } else {
                         p.sc.mark("not an expression");
@@ -425,23 +425,23 @@ function Parser(sc, resolver) {
                 } else {
                     p.pr.wait(sc.ASSIGN, sc.SEPARATOR, sc.DELIMITER);
                 }
-                if(p.pr.is(sc.ASSIGN)) {
+                if (p.pr.is(sc.ASSIGN)) {
                     p.pr.next();
                     var a = ast.stmt().assign();
                     a.expression = e.value;
                     p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
                     a.selector = p.obj(b);
                     should.ok(ast.is(a.selector).type("Selector"));
-                    if(!p.tgt.compatibleTypes(a.selector, a.expression)){
+                    if (!p.tgt.compatibleTypes(a.selector, a.expression)) {
                         p.sc.mark("incompatible types");
                     }
                     var o = p.tgt.thisObj(a.selector);
-                    if(!_.isEqual(a.selector.module, p.tgt.mod.name) && !_.isEqual(o.modifier, "rw") && _.isEmpty(a.selector.inside)){
+                    if (!_.isEqual(a.selector.module, p.tgt.mod.name) && !_.isEqual(o.modifier, "rw") && _.isEmpty(a.selector.inside)) {
                         p.sc.mark("can't assign to read-only object");
                     }
                     b.stmts.push(a);
                 } else {
-                    if(ast.is(e.value).type("SelectExpr")) {
+                    if (ast.is(e.value).type("SelectExpr")) {
                         var obj = p.tgt.thisObj(e.value.selector);
                         if (_.isEqual(obj.type.name, "BLOCK")) {
                             var a = ast.stmt().call();
@@ -450,44 +450,44 @@ function Parser(sc, resolver) {
                         } else {
                             p.sc.mark("not a statement");
                         }
-                    } else if(ast.is(e.value).type("CallExpr")){
+                    } else if (ast.is(e.value).type("CallExpr")) {
                         //do nothing
                     } else {
                         p.sc.mark("not a statement");
                     }
                 }
             }
-    }
+        }
     };
 
     p.vars = function (b) {
         should.ok(p.pr.is(sc.VAR));
         p.pr.next();
-        for(var stop = false; !stop;){
-            if(p.pr.wait(sc.IDENT, sc.DELIMITER, sc.SEPARATOR)){
+        for (var stop = false; !stop;) {
+            if (p.pr.wait(sc.IDENT, sc.DELIMITER, sc.SEPARATOR)) {
                 var il = [];
-                for(;;){
+                for (; ;) {
                     should.ok(!p.isMod());
                     var o = {
                         id: p.pr.identifier().id,
                         mod: null
                     };
-                    if(!b.objects.hasOwnProperty(o.id)) {
+                    if (!b.objects.hasOwnProperty(o.id)) {
                         il.push(o);
                     } else {
                         p.sc.mark("identifiers already exists ", id);
                     }
                     p.pr.next();
-                    if(p.pr.wait(sc.TIMES)){
+                    if (p.pr.wait(sc.TIMES)) {
                         p.pr.next();
                         o.mod = "rw";
-                    } else if (p.pr.is(sc.MINUS)){
+                    } else if (p.pr.is(sc.MINUS)) {
                         p.pr.next();
                         o.mod = "r";
-                    } else{
+                    } else {
                         o.mod = "";
                     }
-                    if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                    if (p.pr.wait(sc.COMMA, sc.DELIMITER)) {
                         p.pr.next();
                         p.pr.pass(sc.DELIMITER);
                     } else {
@@ -505,9 +505,9 @@ function Parser(sc, resolver) {
                         b.objects[v.id] = vr;
                     });
                 };
-                if(p.pr.wait(sc.IDENT, sc.DELIMITER)) {
+                if (p.pr.wait(sc.IDENT, sc.DELIMITER)) {
                     p.typ(ft);
-                } else if(p.pr.is(sc.BLOCK)){
+                } else if (p.pr.is(sc.BLOCK)) {
                     ft(types.find("BLOCK"));
                     p.pr.next();
                 } else {
@@ -520,12 +520,12 @@ function Parser(sc, resolver) {
     };
 
     p.block = function (b, sym) {
-        if(_.isEqual(sym, sc.UNIT)) {
+        if (_.isEqual(sym, sc.UNIT)) {
             while (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
             p.tgt.mod.objects = b.objects;
-            
+
             while (p.pr.wait(sc.BLOCK, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();
                 var pb = p.tgt.pushBlock();
@@ -547,46 +547,46 @@ function Parser(sc, resolver) {
             } else if (!(p.pr.is(sc.STOP) || p.pr.is(sc.END))) {
                 p.sc.mark("END expected but ", p.pr.sym.code, " found");
             }
-            
+
             if (p.pr.wait(sc.STOP, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();
                 p.stmts(b);
                 p.tgt.mod.stop = b.stmts;
             }
-        } else if (_.isEqual(sym, sc.BLOCK)){
+        } else if (_.isEqual(sym, sc.BLOCK)) {
             p.pr.expect(sc.IDENT, sc.DELIMITER);
             should.ok(!p.isMod());
             var name = p.pr.identifier().id;
-            if(p.tgt.isBlock(p.tgt.mod.name, name))
+            if (p.tgt.isBlock(p.tgt.mod.name, name))
                 p.sc.mark(`identifier already exists ${name}`);
 
             b.name = name;
             p.pr.next();
-            if (p.pr.wait(sc.TIMES)){
+            if (p.pr.wait(sc.TIMES)) {
                 p.pr.next();
                 b.exported = true;
             }
             while (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }
-            if(p.pr.wait(sc.PAR, sc.DELIMITER, sc.SEPARATOR)){
-                if(Object.keys(b.objects).length == 0){
+            if (p.pr.wait(sc.PAR, sc.DELIMITER, sc.SEPARATOR)) {
+                if (Object.keys(b.objects).length == 0) {
                     p.sc.mark("nothing in parameters");
                 }
                 p.pr.next();
                 var order = 0;
-                for(var stop = false; !stop;){
+                for (var stop = false; !stop;) {
                     p.pr.expect(sc.IDENT, sc.DELIMITER);
                     var id = p.pr.identifier();
                     p.pr.next();
-                    if(!b.objects.hasOwnProperty(id.id)){
+                    if (!b.objects.hasOwnProperty(id.id)) {
                         p.sc.mark("unknown param");
                     }
-                    if(_.isObject(b.objects[id.id].param)){
+                    if (_.isObject(b.objects[id.id].param)) {
                         p.sc.mark("duplicate param")
                     }
                     var par = "value";
-                    if(p.pr.is(sc.CIRC)){
+                    if (p.pr.is(sc.CIRC)) {
                         par = "reference";
                         p.pr.next();
                     }
@@ -594,14 +594,14 @@ function Parser(sc, resolver) {
                     b.objects[id.id].param.type = par;
                     b.objects[id.id].param.number = order;
                     order++;
-                    if(p.pr.wait(sc.COMMA, sc.DELIMITER)){
+                    if (p.pr.wait(sc.COMMA, sc.DELIMITER)) {
                         p.pr.next();
                     } else {
                         stop = true;
                     }
                 }
             }
-            if(p.pr.wait(sc.BEGIN, sc.DELIMITER, sc.SEPARATOR)){
+            if (p.pr.wait(sc.BEGIN, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();
                 p.stmts(b);
             }
@@ -609,7 +609,7 @@ function Parser(sc, resolver) {
             p.pr.next();
             p.pr.expect(sc.IDENT, sc.DELIMITER);
             should.ok(!p.isMod());
-            if(!_.isEqual(b.name, p.pr.identifier().id))
+            if (!_.isEqual(b.name, p.pr.identifier().id))
                 p.sc.mark("block name expected ", pb.name);
             p.pr.next();
         } else {
@@ -636,7 +636,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.END, sc.SEPARATOR, sc.DELIMITER);
                 p.pr.next();
                 p.pr.expect(sc.IDENT, sc.DELIMITER);
-                if(!_.isEqual(mod, p.pr.identifier().id))
+                if (!_.isEqual(mod, p.pr.identifier().id))
                     p.sc.mark("wrong module name");
                 p.pr.next();
             }).then(function () {
@@ -651,7 +651,7 @@ function Parser(sc, resolver) {
         });
     };
 
-     p.pr.next();
+    p.pr.next();
 }
 
 module.exports = function (sc, resolver) {

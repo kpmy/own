@@ -3,11 +3,11 @@ const should = require("should/as-function");
 const _ = require('underscore');
 const charfunk = require("charfunk");
 
-function Sym (type) {
+function Sym(type) {
     this.type = "SYM";
     this.code = null;
-    
-    if(type)
+
+    if (type)
         this["type"] = type;
 }
 
@@ -18,7 +18,7 @@ function thisSym(code) {
 }
 
 function isLetter(ch) {
-    if(ch){
+    if (ch) {
         return charfunk.isLetter(ch.charAt(0));
     } else {
         return false;
@@ -26,7 +26,7 @@ function isLetter(ch) {
 }
 
 function isNum(ch) {
-    if(ch){
+    if (ch) {
         return charfunk.isDigit(ch.charAt(0));
     } else {
         return false;
@@ -70,7 +70,7 @@ function Scanner(stream) {
     this.GTR = thisSym(">");
     this.LEQ = thisSym("<=");
     this.GEQ = thisSym(">=");
-    
+
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
         "END": s.END = thisSym("END"),
@@ -81,12 +81,12 @@ function Scanner(stream) {
         "BLOCK": s.BLOCK = thisSym("BLOCK"),
         "BEGIN": s.BEGIN = thisSym("BEGIN"),
         "PAR": s.PAR = thisSym("PAR"),
-        
+
         "NONE": s.NONE = thisSym("NONE"),
         "TRUE": s.TRUE = thisSym("TRUE"),
         "FALSE": s.FALSE = thisSym("FALSE")
     };
-    
+
     this["stream"] = stream;
     this["eof"] = false;
     this["pos"] = 0;
@@ -96,13 +96,13 @@ function Scanner(stream) {
         last: 0,
         crlf: false,
         line: function () {
-            if (s.ch == '\r'){
+            if (s.ch == '\r') {
                 s.lines.crlf = true;
             }
-            if((s.lines.crlf && s.ch == '\r') || (!s.lines.crlf && s.ch == '\n')){
+            if ((s.lines.crlf && s.ch == '\r') || (!s.lines.crlf && s.ch == '\n')) {
                 s.lines.count++;
                 s.lines.last = 1
-            }else if (s.lines.crlf && s.ch == '\n'){
+            } else if (s.lines.crlf && s.ch == '\n') {
                 s.lines.last--;
             }
         }
@@ -114,29 +114,29 @@ function Scanner(stream) {
 
     this.mark = function () {
         var args = Array.prototype.slice.call(arguments, 0);
-        args.push(" at pos "+s.pos);
-        args.push(" at line "+s.thisLine());
+        args.push(" at pos " + s.pos);
+        args.push(" at line " + s.thisLine());
         console.log(args.join(""));
         throw new Error(args.join(""));
     };
 
     this.futureMark = function () {
         var args = Array.prototype.slice.call(arguments, 0);
-        args.push(" at pos "+s.pos);
-        args.push(" at line "+s.thisLine());
+        args.push(" at pos " + s.pos);
+        args.push(" at line " + s.thisLine());
         return function () {
             console.log(args.join(""));
             throw new Error(args.join(""));
         }
     };
-    
+
     this.next = function () {
         var c = this.stream.read(1);
-        if(c) {
+        if (c) {
             this.pos++;
             this.ch = c;
             //console.log(c);
-            if (this.ch == '\r' || this.ch == '\n'){
+            if (this.ch == '\r' || this.ch == '\n') {
                 this.lines.line();
             } else {
                 this.lines.last++;
@@ -152,26 +152,26 @@ function Scanner(stream) {
 
     this.comment = function () {
         should.equal(this.ch, "*");
-        for(;;) {
-            while(!this.eof && this.ch != "*"){
+        for (; ;) {
+            while (!this.eof && this.ch != "*") {
                 if (this.ch == "(") {
                     if (this.next() == "*") {
                         this.comment();
                     }
-                }else {
+                } else {
                     this.next();
                 }
             }
-            while (!this.eof && this.ch == "*"){
+            while (!this.eof && this.ch == "*") {
                 this.next();
             }
-            if (this.eof || this.ch == ")"){
+            if (this.eof || this.ch == ")") {
                 break;
             }
         }
-        if(!this.eof){
+        if (!this.eof) {
             this.next();
-        }else{
+        } else {
             this.mark("unclosed comment")
         }
     };
@@ -180,15 +180,15 @@ function Scanner(stream) {
         should.ok(isLetter(this.ch));
         var sym = null;
         var buf = "";
-        for(;;){
+        for (; ;) {
             buf = buf + this.ch;
             this.next();
-            if (this.eof || !(isLetter(this.ch) || isNum(this.ch))){
+            if (this.eof || !(isLetter(this.ch) || isNum(this.ch))) {
                 break;
             }
         }
-        if (!this.eof || !(_.isEmpty(buf))){
-            if (this.keyTab.hasOwnProperty(buf)){
+        if (!this.eof || !(_.isEmpty(buf))) {
+            if (this.keyTab.hasOwnProperty(buf)) {
                 sym = this.keyTab[buf];
             } else {
                 sym = thisSym("IDENT");
@@ -209,7 +209,7 @@ function Scanner(stream) {
         var mbuf = "";
         var hasDot = false;
 
-        for(;;) {
+        for (; ;) {
             buf = buf + this.ch;
             this.next();
             if (_.isEqual(this.ch, ".")) {
@@ -222,11 +222,11 @@ function Scanner(stream) {
                 break;
             }
         }
-        if(mods.indexOf(this.ch)>=0){
+        if (mods.indexOf(this.ch) >= 0) {
             mbuf = this.ch;
             if (!this.eof) this.next();
         }
-        if(!this.eof || !_.isEmpty(buf)){
+        if (!this.eof || !_.isEmpty(buf)) {
             sym = thisSym("NUM");
             sym.value = buf;
             sym.modifier = mbuf;
@@ -244,7 +244,7 @@ function Scanner(stream) {
         sym.apos = !_.isEqual(this.ch, '"');
         sym.value = "";
         this.next();
-        while(!this.eof && !_.isEqual(this.ch, end)){
+        while (!this.eof && !_.isEqual(this.ch, end)) {
             sym.value = sym.value + this.ch;
             this.next();
         }
@@ -257,7 +257,7 @@ function Scanner(stream) {
 
     this._get = function () {
         var sym = null;
-        switch (this.ch){
+        switch (this.ch) {
             case "-":
                 if (this.next() == ">") {
                     this.next();
@@ -267,7 +267,7 @@ function Scanner(stream) {
                 }
                 break;
             case "(":
-                if (this.next() == "*"){
+                if (this.next() == "*") {
                     this.comment();
                     sym = this.EMPTY;
                 } else {
@@ -278,11 +278,11 @@ function Scanner(stream) {
                 this.next();
                 sym = this.RPAREN;
                 break;
-            case "[": 
+            case "[":
                 this.next();
                 sym = this.LBRAK;
                 break;
-            case "]": 
+            case "]":
                 this.next();
                 sym = this.RBRAK;
                 break;
@@ -296,10 +296,10 @@ function Scanner(stream) {
                 break;
             case "<":
                 var n = this.next();
-                if(n == "<") {
+                if (n == "<") {
                     sym = this.LBRUX;
                     this.next();
-                } else if (n == "="){
+                } else if (n == "=") {
                     sym = this.LEQ;
                     this.next();
                 } else {
@@ -308,17 +308,17 @@ function Scanner(stream) {
                 break;
             case ">":
                 var n = this.next();
-                if(n == ">") {
+                if (n == ">") {
                     sym = this.RBRUX;
                     this.next();
-                } else if (n == "="){
+                } else if (n == "=") {
                     sym = this.GEQ;
                     this.next();
                 } else {
                     sym = this.GTR;
                 }
                 break;
-            case ",": 
+            case ",":
                 this.next();
                 sym = this.COMMA;
                 break;
@@ -330,7 +330,7 @@ function Scanner(stream) {
                 this.next();
                 sym = this.DOT;
                 break;
-            case "*": 
+            case "*":
                 this.next();
                 sym = this.TIMES;
                 break;
@@ -368,16 +368,16 @@ function Scanner(stream) {
                 break;
             case " ":
             case "\t":
-                    sym = this.DELIMITER;
-                    while(_.isEqual(this.ch, " ") || _.isEqual(this.ch, "\t")){
-                        this.next();
-                    }
-                    break;
+                sym = this.DELIMITER;
+                while (_.isEqual(this.ch, " ") || _.isEqual(this.ch, "\t")) {
+                    this.next();
+                }
+                break;
             case "\r":
             case "\n":
             case ";":
                 sym = this.SEPARATOR;
-                while(_.isEqual(this.ch, "\r") || _.isEqual(this.ch, "\n") || _.isEqual(this.ch, ";")){
+                while (_.isEqual(this.ch, "\r") || _.isEqual(this.ch, "\n") || _.isEqual(this.ch, ";")) {
                     this.next();
                 }
                 break;
@@ -387,26 +387,26 @@ function Scanner(stream) {
                 sym = this.str();
                 break;
             case "":
-                    sym = this.EOF;
-                    break;
+                sym = this.EOF;
+                break;
             default:
-                if(isLetter(this.ch)){
+                if (isLetter(this.ch)) {
                     sym = this.ident();
-                }else if (isNum(this.ch)){
+                } else if (isNum(this.ch)) {
                     sym = this.num();
-                }else {
+                } else {
                     this.mark("unhandled '", this.ch, "'")
                 }
         }
         should.exist(sym);
         return sym;
     };
-    
+
     this.get = function () {
         if (this.eof) return this.EOF;
 
         var sym = null;
-        for(var stop = this.eof; !stop;){
+        for (var stop = this.eof; !stop;) {
             sym = this._get();
             stop = _.isEqual(sym.type, "SYM") || this.eof;
         }
