@@ -1,0 +1,10 @@
+UNIT Test8
+    IMPORT Console -> Log
+    VAR s STRING; b BOOLEAN
+START
+    "Hello" -> s
+    s + ',' + 020U -> s
+    Log.Print[s + "World" + ('!' + 0DU)]
+    "Hello" # "Wold" & "World" = "Hello" -> b
+    '!' = '!' & '4' < `5` -> b
+END Test8

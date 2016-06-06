@@ -35,7 +35,7 @@ function Module() {
     this.thisImport = function (name) {
         console.log(`find imp ${name}`);
         var ret = null;
-        ret = this.imports.find(x => _.isEqual(x.name, name));
+        ret = this.imports.find(x => _.isEmpty(x.alias) ? _.isEqual(x.name, name) : _.isEqual(x.alias, name));
         return _.isUndefined(ret) ? null : ret;
     }
 }

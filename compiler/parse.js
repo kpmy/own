@@ -278,7 +278,7 @@ function Parser(sc, resolver) {
                     if (p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
                         p.pr.next();
                         p.pr.expect(sc.IDENT, sc.DELIMITER);
-                        alias = p.pr.ident();
+                        alias = p.pr.identifier().id;
                         p.pr.next();
                     }
                     var imp = ast.imp();

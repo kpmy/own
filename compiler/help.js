@@ -106,18 +106,26 @@ function Helper(sc) {
     h.num = function () {
         var ret = null;
         should.ok(h.is(sc.NUM));
-        if(_.isEmpty(h.sym.modifier)){
-            if (h.sym.dot){
+        if (_.isEmpty(h.sym.modifier)) {
+            if (h.sym.dot) {
                 h.sc.mark("reals not supported");
-            } else {
-                ret = {
-                    type: types.INTEGER,
-                    value: parseInt(h.sym.value, 10)
-                };
+            }
+            ret = {
+                type: types.INTEGER,
+                value: parseInt(h.sym.value, 10)
+            };
+        } else if (_.isEqual(h.sym.modifier, "U")) {
+            if (h.sym.dot) {
+                h.sc.mark("reals not supported");
+            }
+            ret = {
+                type: types.CHAR,
+                value: String.fromCharCode(parseInt(h.sym.value, 16))
             }
         } else {
             h.sc.mark("not a number ", sc.value);
         }
+        should.exist(ret);
         return ret;
     };
 }

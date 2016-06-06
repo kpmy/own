@@ -263,6 +263,9 @@ function Builder(mod, st) {
 
     b.import = function (imp) {
         st.write(`mod.Import${imp.name} = rts.load("${imp.name}");\n`);
+        if (!_.isEmpty(imp.alias)) {
+            st.write(`mod.Import${imp.alias} = mod.Import${imp.name};\n`);
+        }
     };
 
     b.build = function () {

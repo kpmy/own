@@ -341,7 +341,7 @@ Value.prototype.isValueEqual = function(that){
 
 function ValueMath() {
     const m = this;
-    m.nativeOp = {
+    m.op = {
         "+": "+",
         "-": "-",
         "*": "*",
@@ -357,30 +357,116 @@ function ValueMath() {
     };
 
     m.olrmap = {}; //{op : {left type : {right type : result type
-    m.olrmap["-"] = m.olrmap["*"] = m.olrmap["+"]= {
+    m.olrmap["+"] = {
         "INTEGER": {
-            "INTEGER": "INTEGER"
+            "INTEGER": {type: "INTEGER"}
+        },
+        "STRING": {
+            "STRING": {type: "STRING", fn: (l, r) => l.concat(r)},
+            "CHAR": {type: "STRING", fn: (l, r) => l.concat(r)}
+        },
+        "CHAR": {
+            "STRING": {type: "STRING", fn: (l, r) => l.concat(r)},
+            "CHAR": {type: "STRING", fn: (l, r) => l.concat(r)}
+        }
+    };
+
+    m.olrmap["-"] = {
+        "INTEGER": {
+            "INTEGER": {type: "INTEGER"}
+        }
+    };
+
+    m.olrmap["*"] = {
+        "INTEGER": {
+            "INTEGER": {type: "INTEGER"}
         }
     };
 
     m.olrmap["|"] = m.olrmap["&"] = {
         "BOOLEAN": {
-            "BOOLEAN": "BOOLEAN"
+            "BOOLEAN": {type: "BOOLEAN"}
         }
     };
 
-    m.olrmap["<"] = m.olrmap[">"] = m.olrmap["<="] = m.olrmap[">="] = m.olrmap["#"] = m.olrmap["="] = {
+    m.olrmap["<"] = {
         "INTEGER": {
-            "INTEGER": "BOOLEAN"
+            "INTEGER": {type: "BOOLEAN"}
+        },
+        "STRING": {
+            "STRING": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) < 0}
+        },
+        "CHAR": {
+            "CHAR": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) < 0}
+        }
+    };
+
+    m.olrmap[">"] = {
+        "INTEGER": {
+            "INTEGER": {type: "BOOLEAN"}
+        },
+        "STRING": {
+            "STRING": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) > 0}
+        },
+        "CHAR": {
+            "CHAR": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) > 0}
+        }
+    };
+
+    m.olrmap["<="] = {
+        "INTEGER": {
+            "INTEGER": {type: "BOOLEAN"}
+        },
+        "STRING": {
+            "STRING": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) <= 0}
+        },
+        "CHAR": {
+            "CHAR": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) <= 0}
+        }
+    };
+
+    m.olrmap[">="] = {
+        "INTEGER": {
+            "INTEGER": {type: "BOOLEAN"}
+        },
+        "STRING": {
+            "STRING": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) >= 0}
+        },
+        "CHAR": {
+            "CHAR": {type: "BOOLEAN", fn: (l, r) => l.localeCompare(r) >= 0}
+        }
+    };
+
+    m.olrmap["#"] = {
+        "INTEGER": {
+            "INTEGER": {type: "BOOLEAN"}
+        },
+        "STRING": {
+            "STRING": {type: "BOOLEAN", fn: (l, r) => !_.isEqual(l, r)}
+        },
+        "CHAR": {
+            "CHAR": {type: "BOOLEAN", fn: (l, r) => !_.isEqual(l, r)}
+        }
+    };
+
+    m.olrmap["="] = {
+        "INTEGER": {
+            "INTEGER": {type: "BOOLEAN"}
+        },
+        "STRING": {
+            "STRING": {type: "BOOLEAN", fn: _.isEqual}
+        },
+        "CHAR": {
+            "CHAR": {type: "BOOLEAN", fn: _.isEqual}
         }
     };
 
     m.oemap = {};
     m.oemap["-"] = {
-        "INTEGER": "INTEGER"
+        "INTEGER": {type: "INTEGER"}
     };
     m.oemap["~"] = {
-        "BOOLEAN": "BOOLEAN"
+        "BOOLEAN": {type: "BOOLEAN"}
     };
 
     m.value = function () {
@@ -394,7 +480,7 @@ function ValueMath() {
             return ret
         }
         var body = `throw new Error("not implemented")`;
-        if (!_.isUndefined(m.nativeOp[op])) {
+        if (!_.isUndefined(m.op[op])) {
             body = (`
                 const op = "${op}";
                 
@@ -404,13 +490,12 @@ function ValueMath() {
                 var val = v();
                 var rt = emap[val.type.name];
                 if(rt === undefined) throw new Error("unknown expr type "+val.type.name);
-           
-                if(typeof this.nativeOp[op] == "string") {
-                    var ret = ${m.nativeOp[op]}val.getNativeValue();
-                } else {
-                    throw new Error("not implemented");
-                }
-                return this.value(rt, ret);
+                
+                var ret = (rt.fn === undefined) ? (function(x){
+                    return ${m.op[op]}x;
+                }) : rt.fn
+                
+                return this.value(rt.type, ret(val.getNativeValue()));
                 `);
         } else {
             throw new Error(`not implemented for ${op}`);
@@ -432,7 +517,7 @@ function ValueMath() {
             return ret
         }
         var body = `throw new Error("not implemented")`;
-        if (!_.isUndefined(m.nativeOp[op])) {
+        if (!_.isUndefined(m.op[op])) {
             body = (`
                 const op = "${op}";
                 var left = l();
@@ -455,13 +540,11 @@ function ValueMath() {
                 var rt = rmap[right.type.name];
                 if(rt === undefined) throw new Error("unknown right type "+right.type.name);
             
-                if(typeof this.nativeOp[op] == "string") {
-                    var ret = left.getNativeValue() ${m.nativeOp[op]} right.getNativeValue();
-                } else {
-                    throw new Error("not implemented");
-                }
-           
-                return this.value(rt, ret);`
+                var ret = (rt.fn === undefined) ? (function(lv, rv){
+                    return lv${m.op[op]}rv;
+                }) : rt.fn;
+               
+                return this.value(rt.type, ret(left.getNativeValue(), right.getNativeValue()));`
                 );
         } else {
             throw new Error(`not implemented for ${op}`);
