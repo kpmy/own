@@ -1,10 +1,19 @@
 UNIT Test8
     IMPORT Console -> Log
-    VAR s STRING; b BOOLEAN
+    VAR s STRING; b BOOLEAN; x INTEGER
+
+    BLOCK Wo
+        VAR x, f INTEGER
+        PAR INFIX f*, x
+    BEGIN
+        x -> f
+    END Wo
+
 START
     "Hello" -> s
     s + ',' + 020U -> s
     Log.Print[s + "World" + ('!' + 0DU)]
     "Hello" # "Wold" & "World" = "Hello" -> b
     '!' = '!' & '4' < `5` -> b
+    \Wo 5 -> x
 END Test8

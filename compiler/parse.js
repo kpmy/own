@@ -21,6 +21,28 @@ function Parser(sc, resolver) {
         e.value = null;
         e.stack = [];
 
+        function existsBlock(obj) {
+            var exists = p.tgt.isBlock(obj.module, obj.name);
+            if (!exists && _.isEqual(obj.module, p.tgt.mod.name)) {
+                var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
+                var f = function (res, rej) {
+                    var std = p.tgt.std();
+                    if (p.tgt.isBlock(obj.module, obj.name)) {
+                        res();
+                    } else if (!_.isNull(std.thisBlock(obj.name))) {
+                        obj.module = "$std";
+                        obj.fix(obj);
+                        res();
+                    } else {
+                        mark();
+                    }
+                };
+                p.tgt._resolvers.push(f);
+            } else if (!exists) {
+                p.sc.mark("imported object or block not found");
+            }
+        }
+
         e.pop = function () {
             //console.log("pop");
             should.ok(!_.isEmpty(e.stack));
@@ -33,6 +55,11 @@ function Parser(sc, resolver) {
                 x.left = e.pop();
             } else if (ast.is(x).type("MonadicOp")) {
                 x.expr = e.pop();
+            } else if (ast.is(x).type("InfixExpr")) {
+                x.params.length = x.arity;
+                for (var i = x.arity - 1; i >= 0; i--) {
+                    x.params[i] = e.pop();
+                }
             } else if (x instanceof Expression) {
                 x = x.value;
             }
@@ -72,25 +99,7 @@ function Parser(sc, resolver) {
                 if (ast.is(obj).type("Selector")) {
                     e.push(ast.expr().select(obj));
                 } else if (ast.is(obj).type("CallExpr")) {
-                    var exists = p.tgt.isBlock(obj.module, obj.name);
-                    if (!exists && _.isEqual(obj.module, p.tgt.mod.name)) {
-                        var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
-                        var f = function (res, rej) {
-                            var std = p.tgt.std();
-                            if (p.tgt.isBlock(obj.module, obj.name)) {
-                                res();
-                            } else if (!_.isNull(std.thisBlock(obj.name))) {
-                                obj.module = "$std";
-                                obj.fix(obj);
-                                res();
-                            } else {
-                                mark();
-                            }
-                        };
-                        p.tgt._resolvers.push(f);
-                    } else if (!exists) {
-                        p.sc.mark("imported object or block not found");
-                    }
+                    existsBlock(obj);
                     e.push(obj)
                 } else {
                     p.sc.mark(`invalid object or call`);
@@ -150,6 +159,37 @@ function Parser(sc, resolver) {
                 e.factor();
                 p.pr.pass(sc.DELIMITER);
                 e.push(ast.expr().monadic(sc.TILD.code));
+            } else if (p.pr.is(sc.FIX)) {
+                p.pr.next();
+                p.pr.expect(sc.IDENT);
+                var inf = null;
+                var obj = p.obj(p.tgt.block());
+                if (ast.is(obj).type("Selector")) {
+                    var o = p.tgt.thisObj(obj);
+                    if (_.isEqual(o.type.name, "BLOCK")) {
+                        inf = ast.expr().infix();
+                        inf.selector = obj;
+                        inf.arity = 1;
+                        if (!_.isEmpty(obj.inside)) {
+                            p.sc.mark("parameters not allowed")
+                        }
+                    } else {
+                        p.sc.mark("not a block reference");
+                    }
+                } else if (ast.is(obj).type("CallExpr")) {
+                    existsBlock(obj);
+                    if (!obj.pure) { //TODO проверка параметров
+                        p.sc.mark("parameters not allowed")
+                    }
+                    inf = ast.expr().infix();
+                    inf.expression = obj;
+                    inf.arity = 1;
+                } else {
+                    p.sc.mark(`invalid object or block`);
+                }
+                should.exist(inf);
+                e.push(new Expression());
+                e.push(inf);
             } else {
                 p.sc.mark("invalid expression ", p.pr.sym.code);
             }
@@ -545,6 +585,7 @@ function Parser(sc, resolver) {
                 block.sequence = pb.stmts;
                 block.name = pb.name;
                 block.exported = pb.exported;
+                block.infix = pb.infix;
                 b.blocks.push(block);
             }
             p.tgt.mod.blocks = b.blocks;
@@ -583,7 +624,13 @@ function Parser(sc, resolver) {
                     p.sc.mark("nothing in parameters");
                 }
                 p.pr.next();
+                b.infix = false;
+                if (p.pr.wait(sc.INFIX, sc.DELIMITER)) {
+                    b.infix = true;
+                    p.pr.next();
+                }
                 var order = 0;
+                var pl = [];
                 for (var stop = false; !stop;) {
                     p.pr.expect(sc.IDENT, sc.DELIMITER);
                     var id = p.pr.identifier();
@@ -591,22 +638,38 @@ function Parser(sc, resolver) {
                     if (!b.objects.hasOwnProperty(id.id)) {
                         p.sc.mark("unknown param");
                     }
-                    if (_.isObject(b.objects[id.id].param)) {
+                    var obj = b.objects[id.id];
+                    if (_.isObject(obj.param)) {
                         p.sc.mark("duplicate param")
                     }
                     var par = "value";
-                    if (p.pr.is(sc.CIRC)) {
+                    if (p.pr.is(sc.TIMES)) {
                         par = "reference";
                         p.pr.next();
                     }
-                    b.objects[id.id].param = ast.formal();
-                    b.objects[id.id].param.type = par;
-                    b.objects[id.id].param.number = order;
+                    obj.param = ast.formal();
+                    obj.param.type = par;
+                    obj.param.number = order;
+                    pl.push(obj);
                     order++;
                     if (p.pr.wait(sc.COMMA, sc.DELIMITER)) {
                         p.pr.next();
                     } else {
                         stop = true;
+                    }
+                }
+                if (b.infix) {
+                    if (pl.length < 2) {
+                        p.sc.mark("not enougn params for infix call")
+                    }
+                    if (pl.length == 2) {
+                        if (pl[0].param.type != "reference") {
+                            p.sc.mark("invalid unary infix format, reference should be first")
+                        }
+                    } else {
+                        if (pl[0].param.type != "reference" || pl[1].param.type != "reference") {
+                            p.sc.mark(`invalid ${pl.length - 1}-ary infix format, reference should be first or second`)
+                        }
                     }
                 }
             }

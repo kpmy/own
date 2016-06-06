@@ -70,6 +70,7 @@ function Scanner(stream) {
     this.GTR = thisSym(">");
     this.LEQ = thisSym("<=");
     this.GEQ = thisSym(">=");
+    this.FIX = thisSym("\\");
 
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -81,7 +82,8 @@ function Scanner(stream) {
         "BLOCK": s.BLOCK = thisSym("BLOCK"),
         "BEGIN": s.BEGIN = thisSym("BEGIN"),
         "PAR": s.PAR = thisSym("PAR"),
-
+        "INFIX": s.INFIX = thisSym("INFIX"),
+        
         "NONE": s.NONE = thisSym("NONE"),
         "TRUE": s.TRUE = thisSym("TRUE"),
         "FALSE": s.FALSE = thisSym("FALSE")
@@ -325,6 +327,10 @@ function Scanner(stream) {
             case "$":
                 this.next();
                 sym = this.DOLLAR;
+                break;
+            case "\\":
+                this.next();
+                sym = this.FIX;
                 break;
             case ".":
                 this.next();

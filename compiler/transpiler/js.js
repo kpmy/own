@@ -9,6 +9,11 @@ const ast = rerequire("../ir/ast.js");
 
 function Builder(mod, st) {
     const b = this;
+    b.count = 0;
+    b.nextInt = () => {
+        b.count++;
+        return b.count;
+    };
 
     b.ln = function (x) {
         if(x) st.write(x);
@@ -89,8 +94,12 @@ function Builder(mod, st) {
         params.forEach((p, i, $) => {
             if(i > 0) b.ln(",");
             var valueParam = true;
+            console.log(p);
             if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
-                if (ast.is(p.expression).type("SelectExpr")){
+                if (typeof p == "string") { //temporary
+                    st.write(p);
+                    valueParam = false;
+                } else if (ast.is(p.expression).type("SelectExpr")) {
                     if(!_.isEqual(mod.name, p.expression.selector.module)){
                         var imp = mod.thisImport(p.expression.selector.module);
                         var o = imp.def.objects[p.expression.selector.name];
@@ -187,12 +196,56 @@ function Builder(mod, st) {
             b.expr(e.right);
             st.write("}");
             st.write(")");
-        } else if (ast.is(e).type("MonadicOp")){
+        } else if (ast.is(e).type("MonadicOp")) {
             st.write(`rts.math.mop("${e.op}", `);
             st.write("function(){return ");
             b.expr(e.expr);
             st.write("}");
             st.write(")")
+        } else if (ast.is(e).type("InfixExpr")) {
+            st.write(`function(){ `);
+            if (!_.isNull(e.expression)) {
+                var m = "mod";
+                var block = null;
+                if (!_.isEqual(mod.name, e.expression.module)) {
+                    m = `mod.Import${e.expression.module}`;
+                    var imp = mod.thisImport(e.expression.module);
+                    block = imp.thisBlock(e.expression.name);
+                } else {
+                    block = mod.thisBlock(e.expression.name);
+                }
+                should.exist(block); //ast.Block or object from def
+                var fp = [];
+                if (_.isObject(block)) {
+                    fp = Array.from(Object.keys(block.objects))
+                        .filter(k => _.isObject(block.objects[k].param))
+                        .map(k => block.objects[k])
+                        .sort((p0, p1) => p0.param.number - p1.param.number);
+                }
+                var tmp = "tmp" + b.nextInt();
+                var tmpType = null;
+                var i = 0;
+                var tp = [];
+                fp.forEach(p => {
+                    if (_.isNull(tmpType) && _.isEqual(p.param.type, "reference")) {
+                        tmpType = p.type.name;
+                        tp.push(tmp);
+                    } else {
+                        tp.push(e.expression.param(e.params[i]));
+                        i++;
+                    }
+                });
+                e.expression.params = tp;
+                should.exist(tmpType);
+                st.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
+                console.dir(e, {depth: null});
+                b.expr(e.expression);
+                b.ln(";");
+                st.write(`return ${tmp}.value();`);
+            } else {
+                throw new Error("not implemented");
+            }
+            st.write("}()");
         } else {
             throw new Error("unknown expression " + e.constructor.name);
         }
@@ -240,7 +293,9 @@ function Builder(mod, st) {
                 throw new Error("unknown object " + o.constructor.name);
             }
         }
-        par.forEach((o, i, $) => {
+        Array.from(par)
+            .sort((p0, p1) => p0.param.number - p1.param.number)
+            .forEach((o, i, $) => {
             if(_.isEqual(o.param.type, "reference")){
                 st.write(`if(arguments[${i}] !== undefined){\n`);
                 st.write(`if(!rts.isValue(arguments[${i}])){\n`);

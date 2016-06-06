@@ -45,6 +45,7 @@ function Block() {
     this.sequence = [];
     this.objects = {};
     this.exported = false;
+    this.infix = false;
 }
 
 function Definition() {
@@ -134,6 +135,13 @@ function MonadicOp() {
     this.expr = null;
 }
 
+function InfixExpr() {
+    this.selector = null;
+    this.expression = null;
+    this.arity = 0;
+    this.params = [];
+}
+
 function Expr() {
     this.constant = function (type, value) {
         var ret = new ConstExpr();
@@ -174,6 +182,10 @@ function Expr() {
         var ret = new MonadicOp();
         ret.op = op;
         return ret;
+    };
+
+    this.infix = function () {
+        return new InfixExpr();
     }
 }
 
@@ -246,5 +258,7 @@ module.exports.isStatement = function (x) {
 };
 
 module.exports.isExpression = function (x) {
-    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr) || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp) || (x instanceof MonadicOp);
+    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr)
+        || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp) || (x instanceof MonadicOp)
+        || (x instanceof InfixExpr);
 };

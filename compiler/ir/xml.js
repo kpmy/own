@@ -102,11 +102,23 @@ function Writer(mod, stream) {
             w.expr(e.left, "left", op);
             w.expr(e.right, "right", op);
             op.close();
-        } else if(ast.is(e).type("MonadicOp")){
+        } else if (ast.is(e).type("MonadicOp")) {
             var op = xml.element({_attr: {"op": e.op}});
             root.push({"monadic-op": op});
             w.expr(e.expr, "expression", op);
             op.close();
+        } else if (ast.is(e).type("InfixExpr")) {
+            var inf = xml.element({_attr: {"arity": e.arity}});
+            root.push({"infix-expression": inf});
+            if (!_.isNull(e.expression)) {
+                w.expr(e.expression, "expression", inf);
+            } else if (!_.isNull(e.selector)) {
+                w.sel(e.selector, inf)
+            }
+            e.params.forEach(x => {
+                w.expr(x, "param", inf);
+            });
+            inf.close();
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
         }
@@ -179,7 +191,7 @@ function Writer(mod, stream) {
             w.variable(o, unit);
         }
         mod.blocks.forEach(function (b) {
-            var attrs = {"name": b.name, "exported": b.exported};
+            var attrs = {"name": b.name, "exported": b.exported, "infix": b.infix};
             var block = xml.element({_attr: attrs});
             unit.push({"block": block});
             for(var v in b.objects){
@@ -211,7 +223,12 @@ function Reader(ret, stream) {
         var xs = sax.createStream(true);
         var mod = null;
         var stack = [];
-        var stackType = "";
+        var stackTypes = [];
+
+        function stackType() {
+            return _.last(stackTypes);
+        }
+
         function push(x) {
             should.ok(!_.isEmpty(stack));
             consume = stack[stack.length - 1];
@@ -335,7 +352,8 @@ function Reader(ret, stream) {
                 case "item":
                 case "left":
                 case "right":
-                    stackType = n.name;
+                case "param":
+                    stackTypes.push(n.name);
                     break;
                 case "expression":
                     //begin of any expression, do nothing
@@ -368,7 +386,7 @@ function Reader(ret, stream) {
                                 if(_.isUndefined(e.value)){
                                     e.value = [];
                                 }
-                                switch (stackType){
+                                switch (stackType()) {
                                     case "key":
                                         e.value.push([x, null]);
                                         break;
@@ -421,7 +439,7 @@ function Reader(ret, stream) {
                     push(op);
                     stack.push(function (x) {
                         should.ok(ast.isExpression(x));
-                        switch (stackType){
+                        switch (stackType()) {
                             case "left":
                                 op.left = x;
                                 break;
@@ -439,6 +457,25 @@ function Reader(ret, stream) {
                     stack.push(function (x) {
                         should.ok(ast.isExpression(x));
                         op.expr = x;
+                    });
+                    break;
+                case "infix-expression":
+                    var inf = ast.expr().infix();
+                    inf.arity = parseInt(n.attributes["arity"], 10);
+                    push(inf);
+                    stack.push(function (x) {
+                        if (!_.isEqual(stackType(), "param")) {
+                            if (ast.is(x).type("CallExpr")) {
+                                inf.expression = x;
+                            } else if (ast.is(x).type("Selector")) {
+                                inf.selector = x;
+                            } else {
+                                throw new Error(`wrong object for infix expr ${x.constructor.name}`);
+                            }
+                        } else {
+                            should.ok(ast.isExpression(x));
+                            inf.params.push(x);
+                        }
                     });
                     break;
                 default:
@@ -473,6 +510,7 @@ function Reader(ret, stream) {
                 case "selector":
                 case "dyadic-op":
                 case "monadic-op":
+                case "infix-expression":
                     stack.pop();
                     break;
                 case "expression":
@@ -487,7 +525,8 @@ function Reader(ret, stream) {
                 case "item":
                 case "left":
                 case "right":
-                    stackType = "";
+                case "param":
+                    stackTypes.pop();
                     break;
                 default:
                     throw new Error("unknown close tag "+name);

@@ -12,6 +12,7 @@ function Block() {
     this.name = null;
     this.blocks = [];
     this.exported = false;
+    this.infix = false;
 
     this.hasImport = function (alias) {
         if (_.isEmpty(alias))
@@ -187,7 +188,9 @@ function Target(name, sc) {
                 sel4sel();
             } else if(ast.is(src).type("DyadicOp")) {
                 ret = true; //TODO fix op type check
-            } else if (ast.is(src).type("MonadicOp")){
+            } else if (ast.is(src).type("MonadicOp")) {
+                ret = true;
+            } else if (ast.is(src).type("InfixExpr")) {
                 ret = true;
             } else {
                 throw new Error(`incompatible source ${src.constructor.name}`);

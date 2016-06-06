@@ -13,7 +13,7 @@ UNIT Test2
 
     BLOCK Do0
         VAR x INTEGER
-        PAR x^
+        PAR x*
     BEGIN
         1933 -> x
     END Do0

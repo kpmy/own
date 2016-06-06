@@ -11,7 +11,7 @@ UNIT Test0
 
      BLOCK Do0*
         VAR i INTEGER
-        PAR i^
+        PAR i*
      BEGIN
         3423 -> i
      END Do0
