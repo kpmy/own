@@ -83,6 +83,7 @@ function Scanner(stream) {
         "BEGIN": s.BEGIN = thisSym("BEGIN"),
         "PAR": s.PAR = thisSym("PAR"),
         "INFIX": s.INFIX = thisSym("INFIX"),
+        "CONST": s.CONST = thisSym("CONST"),
         
         "NONE": s.NONE = thisSym("NONE"),
         "TRUE": s.TRUE = thisSym("TRUE"),

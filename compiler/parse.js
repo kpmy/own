@@ -96,6 +96,7 @@ function Parser(sc, resolver) {
                 p.pr.next();
             } else if (p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
+                console.log("factor", obj);
                 if (ast.is(obj).type("Selector")) {
                     e.push(ast.expr().select(obj));
                 } else if (ast.is(obj).type("CallExpr")) {
@@ -472,7 +473,7 @@ function Parser(sc, resolver) {
                         p.sc.mark(`identifier not found ${sel.name}`);
                     }
                 } else {
-                    if (!p.tgt.mod.objects.hasOwnProperty(sel.name)) {
+                    if (!p.tgt.block().objects.hasOwnProperty(sel.name)) {
                         p.sc.mark(`identifier not found ${sel.name}`);
                     }
                 }
@@ -527,7 +528,7 @@ function Parser(sc, resolver) {
                         p.sc.mark("incompatible types");
                     }
                     var o = p.tgt.thisObj(a.selector);
-                    if (!_.isEqual(a.selector.module, p.tgt.mod.name) && !_.isEqual(o.modifier, "rw") && _.isEmpty(a.selector.inside)) {
+                    if (!_.isUndefined(o.expression) || !_.isEqual(a.selector.module, p.tgt.mod.name) && !_.isEqual(o.modifier, "rw") && _.isEmpty(a.selector.inside)) {
                         p.sc.mark("can't assign to read-only object");
                     }
                     b.stmts.push(a);
@@ -551,6 +552,36 @@ function Parser(sc, resolver) {
         }
     };
 
+    p.consts = function (b) {
+        should.ok(p.pr.is(sc.CONST));
+        p.pr.next();
+        for (var stop = false; !stop;) {
+            p.pr.pass(sc.DELIMITER, sc.SEPARATOR);
+            var e = new Expression();
+            p.pr.expect(sc.ASSIGN, sc.DELIMITER);
+            p.pr.next();
+            p.pr.expect(sc.IDENT, sc.DELIMITER);
+            var id = p.pr.identifier(false);
+            if (b.objects.hasOwnProperty(id.id)) {
+                p.sc.mark("identifier already exists");
+            }
+            p.pr.next();
+            var cs = ast.constant();
+            cs.name = id.id;
+            cs.expression = e.value;
+            if (p.pr.wait(sc.TIMES)) {
+                p.pr.next();
+                cs.modifier = "r";
+            }
+            b.objects[cs.name] = cs;
+
+            p.pr.pass(sc.DELIMITER, sc.SEPARATOR);
+            if (p.pr.in(sc.VAR, sc.CONST, sc.START, sc.BLOCK, sc.END)) {
+                stop = true;
+            }
+        }
+    };
+
     p.vars = function (b) {
         should.ok(p.pr.is(sc.VAR));
         p.pr.next();
@@ -566,7 +597,7 @@ function Parser(sc, resolver) {
                     if (!b.objects.hasOwnProperty(o.id)) {
                         il.push(o);
                     } else {
-                        p.sc.mark("identifiers already exists ", id);
+                        p.sc.mark("identifiers already exists ", o.id);
                     }
                     p.pr.next();
                     if (p.pr.wait(sc.TIMES)) {
@@ -612,6 +643,9 @@ function Parser(sc, resolver) {
 
     p.block = function (b, sym) {
         if (_.isEqual(sym, sc.UNIT)) {
+            while (p.pr.wait(sc.CONST, sc.DELIMITER, sc.SEPARATOR)) {
+                p.consts(b);
+            }
             while (p.pr.wait(sc.VAR, sc.DELIMITER, sc.SEPARATOR)) {
                 p.vars(b);
             }

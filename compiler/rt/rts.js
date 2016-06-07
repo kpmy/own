@@ -64,6 +64,15 @@ function Inside(){ //так как селектор не только на чт�
     }
 }
 
+function Const(v) {
+    const c = this;
+    c.val = v;
+
+    c.value = function () {
+        return c.val;
+    }
+}
+
 function Obj(t, cv) {
 
     function Local(t) {
@@ -590,6 +599,7 @@ function RTS(pwd) {
     rts.Type = Type;
     rts.Obj = Obj;
     rts.Value = Value;
+    rts.Const = Const;
 
     rts.math = new ValueMath();
 

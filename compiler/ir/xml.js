@@ -157,16 +157,25 @@ function Writer(mod, stream) {
     };
 
     w.variable = function (o, root) {
-        if(ast.is(o).type("Variable")){
+        if (ast.is(o).type("Variable")) {
             const attrs = {name: o.name, type: o.type.name};
-            if(_.isObject(o.param)){
+            if (_.isObject(o.param)) {
                 attrs["param"] = o.param.type;
                 attrs["order"] = o.param.number;
             }
-            if(!_.isEmpty(o.modifier)){
+            if (!_.isEmpty(o.modifier)) {
                 attrs["modifier"] = o.modifier;
             }
             root.push({"variable": {_attr: attrs}});
+        } else if (ast.is(o).type("Constant")) {
+            const attrs = {name: o.name};
+            if (!_.isEmpty(o.modifier)) {
+                attrs["modifier"] = o.modifier;
+            }
+            var cs = xml.element({_attr: attrs});
+            root.push({"constant": cs});
+            w.expr2(o.expression, cs);
+            cs.close();
         } else {
             throw new Error("unexpected object " + o.constructor.name + " " + JSON.stringify(o));
         }
@@ -243,7 +252,7 @@ function Reader(ret, stream) {
                         stack.push(function (x) {
                             if(ast.is(x).type("Import")) {
                                 mod.imports.push(x);
-                            } else if (ast.is(x).type("Variable")) {
+                            } else if (ast.is(x).type("Variable") || ast.is(x).type("Constant")) {
                                 mod.objects[x.name] = x;
                             } else if (ast.is(x).type("Block")){
                                 mod.blocks.push(x);
@@ -293,6 +302,18 @@ function Reader(ret, stream) {
                         v.modifier = n.attributes["modifier"];
                     }
                     push(v);
+                    break;
+                case "constant":
+                    var c = ast.constant();
+                    c.name = n.attributes["name"];
+                    if (n.attributes.hasOwnProperty("modifier")) {
+                        v.modifier = n.attributes["modifier"];
+                    }
+                    push(c);
+                    stack.push(function (x) {
+                        should.ok(ast.isExpression(x));
+                        c.expression = x;
+                    });
                     break;
                 case "start":
                     stack.push(function (x) {
@@ -511,6 +532,7 @@ function Reader(ret, stream) {
                 case "dyadic-op":
                 case "monadic-op":
                 case "infix-expression":
+                case "constant":
                     stack.pop();
                     break;
                 case "expression":

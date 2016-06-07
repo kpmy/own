@@ -34,6 +34,21 @@ function Builder(mod, st) {
         st.write(`${sc}$${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
     };
 
+    b.consts = function (c, scope) {
+        var sc = null;
+        if (ast.is(scope).type("Module")) {
+            sc = "mod.";
+        } else if (ast.is(scope).type("Block")) {
+            sc = "var ";
+        } else {
+            throw new Error(`unknown scope ${scope.constructor.name}`);
+        }
+        should.exist(sc);
+        st.write(`${sc}$${c.name} = new rts.Const(`);
+        b.expr(c.expression);
+        st.write(`);`);
+    };
+
     b.sel = function (s) {
         if(_.isEqual(s.module, mod.name)){
             var sc = "mod.";
@@ -356,8 +371,11 @@ function Builder(mod, st) {
 
         for(v in mod.objects) {
             var o = mod.objects[v];
-            if(ast.is(o).type("Variable")){
+            if (ast.is(o).type("Variable")) {
                 b.variable(o, mod);
+                b.ln();
+            } else if (ast.is(o).type("Constant")) {
+                b.consts(o, mod);
                 b.ln();
             } else {
                 throw new Error("unknown object " + o.constructor.name);

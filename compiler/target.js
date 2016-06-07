@@ -58,7 +58,7 @@ function Target(name, sc) {
     t.isObj = function (mod, name) {
         if(_.isEqual(mod, t.mod.name)){
             if(t.block().isModule) {
-                return t.mod.objects.hasOwnProperty(name);
+                return t.block().objects.hasOwnProperty(name);
             } else {
                 var local = t.block().objects.hasOwnProperty(name);
                 return local || t.mod.objects.hasOwnProperty(name);
@@ -157,6 +157,10 @@ function Target(name, sc) {
                 case "INTEGER":
                 case "BOOLEAN":
                 case "CHAR":
+                    if (ast.is(p).type("Constant")) {
+                        ret = true; //TODO fix this
+                        return;
+                    }
                     ret = _.isEqual(o.type.name, p.type.name);
                     if(!ret &&  !_.isEmpty(src.selector.inside)){
                         if (_.isEqual(p.type.name, "ANY")){

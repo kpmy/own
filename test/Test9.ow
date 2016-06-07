@@ -1,0 +1,13 @@
+UNIT Test9
+    CONST
+        FALSE -> bool
+        53 -> int
+	CONST
+		int + 434 -> int2
+
+    VAR
+        int1 INTEGER
+START
+	int2 -> int1
+	int1 + int -> int1
+END Test9

@@ -17,6 +17,12 @@ function Variable() {
     this.modifier = "";
 }
 
+function Constant() {
+    this.name = null;
+    this.expression = null;
+    this.modifier = "";
+}
+
 function Module() {
     this.name = null;
     this.imports = [];
@@ -231,6 +237,10 @@ module.exports.stmt = function () {
 
 module.exports.variable = function () {
     return new Variable();
+};
+
+module.exports.constant = function () {
+    return new Constant();
 };
 
 module.exports.selector = function () {
