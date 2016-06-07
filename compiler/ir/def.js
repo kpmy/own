@@ -15,6 +15,7 @@ function Writer(mod, stream) {
           .forEach(b => {
           var bd = {
               name: b.name,
+              infix: b.infix,
               objects: {}
           };
           Array.from(Object.keys(b.objects))
@@ -85,6 +86,22 @@ module.exports.std = function () {
                         name: "x",
                         type: {name: "INTEGER"},
                         param: {type: "reference", number: 0}
+                    }
+                }
+            },
+            {
+                name: "ORD",
+                infix: true,
+                objects: {
+                    "res": {
+                        name: "res",
+                        type: {name: "INTEGER"},
+                        param: {type: "reference", number: 0}
+                    },
+                    "ch": {
+                        name: "ch",
+                        type: {name: "CHAR"},
+                        param: {type: "value", number: 1}
                     }
                 }
             }

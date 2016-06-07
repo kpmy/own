@@ -291,6 +291,48 @@ function Parser(sc, resolver) {
 
         e.expression = function () { //  ? :
             e.or();
+            p.pr.pass(sc.DELIMITER);
+            if (p.pr.is(sc.FIX)) {
+                p.pr.next();
+                p.pr.expect(sc.IDENT);
+                var inf = null;
+                var obj = p.obj(p.tgt.block());
+                if (ast.is(obj).type("Selector")) {
+                    var o = p.tgt.thisObj(obj);
+                    if (_.isEqual(o.type.name, "BLOCK")) {
+                        inf = ast.expr().infix();
+                        inf.selector = obj;
+                        inf.arity = 2;
+                        if (!_.isEmpty(obj.inside)) {
+                            p.sc.mark("parameters not allowed")
+                        }
+                    } else {
+                        p.sc.mark("not a block reference");
+                    }
+                } else if (ast.is(obj).type("CallExpr")) {
+                    existsBlock(obj);
+                    if (!obj.pure) { //TODO проверка параметров
+                        p.sc.mark("parameters not allowed")
+                    }
+                    inf = ast.expr().infix();
+                    inf.expression = obj;
+                    inf.arity = 2;
+                } else {
+                    p.sc.mark(`invalid object or block`);
+                }
+                should.exist(inf);
+                e.push(new Expression());
+                for (var stop = false; !stop;) {
+                    if (p.pr.wait(sc.COMMA, sc.DELIMITER)) {
+                        p.pr.next();
+                        e.push(new Expression());
+                        inf.arity++;
+                    } else {
+                        stop = true;
+                    }
+                }
+                e.push(inf);
+            }
         };
 
         p.pr.pass(sc.DELIMITER);
@@ -667,8 +709,8 @@ function Parser(sc, resolver) {
                             p.sc.mark("invalid unary infix format, reference should be first")
                         }
                     } else {
-                        if (pl[0].param.type != "reference" || pl[1].param.type != "reference") {
-                            p.sc.mark(`invalid ${pl.length - 1}-ary infix format, reference should be first or second`)
+                        if ((pl[0].param.type == "reference") || (pl[1].param.type != "reference")) {
+                            p.sc.mark(`invalid ${pl.length - 1}-ary infix format, reference should be second`)
                         }
                     }
                 }

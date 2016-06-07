@@ -1,6 +1,7 @@
 UNIT Test8
     IMPORT Console -> Log
-    VAR s STRING; b BOOLEAN; x INTEGER
+    VAR s STRING; b BOOLEAN; x INTEGER; ch INTEGER
+    VAR inf BLOCK
 
     BLOCK Wo
         VAR x, f INTEGER
@@ -9,6 +10,13 @@ UNIT Test8
         x -> f
     END Wo
 
+    BLOCK Wo2
+        VAR x, y, z, f INTEGER
+        PAR INFIX x, f*, y, z
+    BEGIN
+        x + y + z -> f
+    END Wo2
+
 START
     "Hello" -> s
     s + ',' + 020U -> s
@@ -16,4 +24,8 @@ START
     "Hello" # "Wold" & "World" = "Hello" -> b
     '!' = '!' & '4' < `5` -> b
     \Wo 5 -> x
+    4 \Wo2 5, 5 -> x
+    Wo -> inf
+    \inf 5 -> x
+    \ORD 'x' -> ch
 END Test8

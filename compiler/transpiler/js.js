@@ -109,13 +109,16 @@ function Builder(mod, st) {
                     valueParam = false;
                 }
             } else if (_.isUndefined(block)){
-                if (ast.is(p).type("SelectExpr")){
+                if (typeof p == "string") { //temporary
+                    st.write(p);
+                } else if (ast.is(p).type("SelectExpr")) {
                     b.sel(p.selector);
                 } else {
                     b.expr(p);
                 }
                 valueParam = false;
             }
+
             if (valueParam) {
                 b.expr(p.expression);
             }
@@ -243,7 +246,26 @@ function Builder(mod, st) {
                 b.ln(";");
                 st.write(`return ${tmp}.value();`);
             } else {
-                throw new Error("not implemented");
+                var inside = e.params.slice();
+                console.log(inside);
+                e.selector.inside = [];
+                var tmp = "tmp" + b.nextInt();
+                var tmpType = "ANY";
+                st.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
+                var fp = [];
+                if (inside.length < 2) {
+                    fp.push(tmp, inside[0]);
+                } else {
+                    fp.push(inside[0], tmp);
+                    for (var i = 1; i < inside.length; i++) {
+                        fp.push(inside[i]);
+                    }
+                }
+                b.sel(e.selector);
+                st.write(".call(");
+                b.params(fp);
+                st.write(");\n");
+                st.write(`return ${tmp}.deref().value();`);
             }
             st.write("}()");
         } else {

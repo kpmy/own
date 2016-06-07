@@ -572,6 +572,14 @@ function Std() {
         x.value(new Value("INTEGER", i - 1));
     };
 
+    std.$ORD = function (res, ch) {
+        should.ok(res instanceof Obj);
+        should.ok(ch instanceof Value);
+        should.ok(res.type.base.name == "INTEGER");
+        should.ok(ch.type.name == "CHAR");
+        var c = ch.getNativeValue();
+        res.value(new Value("INTEGER", c.charCodeAt(0)))
+    };
     std.start = function () {
     }
 }
