@@ -1,0 +1,7 @@
+UNIT Test10
+	VAR t TYPE
+	VAR s SET
+START
+	<<1, 2, 3, 4>> -> s
+	\TYPEOF s -> t
+END Test10

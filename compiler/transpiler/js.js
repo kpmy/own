@@ -155,7 +155,7 @@ function Builder(mod, st) {
                         st.write("]")
                     });
                 st.write(`])`)
-            } else if (_.isEqual(e.type.name, "LIST")) {
+            } else if (_.isEqual(e.type.name, "LIST") || _.isEqual(e.type.name, "SET")) {
                 st.write(`new rts.Value("${e.type.name}", [`);
                 Array.from(e.value)
                     .forEach((o, i, a) => {

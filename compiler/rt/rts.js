@@ -34,7 +34,13 @@ function defaultValue(t) {
         case "LIST":
             ret = [];
             break;
+        case "SET":
+            ret = [];
+            break;
         case "BLOCK":
+            ret = null;
+            break;
+        case "TYPE":
             ret = null;
             break;
         default:
@@ -207,6 +213,20 @@ function Obj(t, cv) {
             o.call = notImpl;
             o.deref = notImpl;
             break;
+        case "SET":
+            o.value = function (x) {
+                if (!(_.isNull(x) || _.isUndefined(x))) {
+                    should.ok(x instanceof Value);
+                    if (_.isEqual(x.type.name, "SET")) {
+                        o.val.set(x);
+                    } else {
+                        throw new Error(`types don't match ${o.type.base.name} ${x.type.name}`)
+                    }
+                }
+                return o.val.get();
+            };
+            o.select = o.call = o.deref = notImpl;
+            break;
         case "MAP":
             o.value = function (x) {
                 if(!(_.isNull(x) || _.isUndefined(x))) {
@@ -270,7 +290,26 @@ function Obj(t, cv) {
             o.deref = notImpl;
             o.select = notImpl;
             break;
-        default: throw new Error(`not supported type ${t}`)
+        case "TYPE":
+            o.value = function (x) {
+                if (!(_.isNull(x) || _.isUndefined(x))) {
+                    should.ok(x instanceof Value);
+                    if (_.isEqual(x.type.name, "TYPE")) {
+                        o.val.set(x);
+                    } else if (_.isEqual(x.type.name, "ANY") && _.isNull(x.value)) {
+                        o.val.set(new Value("TYPE", null));
+                    } else {
+                        throw new Error(`types don't match ${o.type.base.name} ${x.type.name}`)
+                    }
+                }
+                return o.val.get();
+            };
+            o.call = notImpl;
+            o.deref = notImpl;
+            o.select = notImpl;
+            break;
+        default:
+            throw new Error(`not supported type ${JSON.stringify(t)}`)
     }
 }
 
@@ -589,6 +628,22 @@ function Std() {
         var c = ch.getNativeValue();
         res.value(new Value("INTEGER", c.charCodeAt(0)))
     };
+
+    std.$TYPEOF = function (res, o) {
+        should.ok(res instanceof Obj);
+        should.ok(o instanceof Value);
+        should.ok(res.type.base.name == "TYPE");
+        if (o.type.name == "ANY") {
+            if (_.isNull(o.value)) {
+                res.value(new Value("TYPE", null))
+            } else {
+                res.value(new Value("TYPE", o.value.type));
+            }
+        } else {
+            res.value(new Value("TYPE", o.type));
+        }
+    };
+
     std.start = function () {
     }
 }

@@ -104,6 +104,22 @@ module.exports.std = function () {
                         param: {type: "value", number: 1}
                     }
                 }
+            },
+            {
+                name: "TYPEOF",
+                infix: true,
+                objects: {
+                    "res": {
+                        name: "res",
+                        type: {name: "TYPE"},
+                        param: {type: "reference", number: 0}
+                    },
+                    "o": {
+                        name: "o",
+                        type: {name: "ANY"},
+                        param: {type: "value", number: 1}
+                    }
+                }
             }
         ]
     };

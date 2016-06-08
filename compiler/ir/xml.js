@@ -68,7 +68,7 @@ function Writer(mod, stream) {
                     w.map(e.value, val);
                     val.close();
                     break;
-                case "LIST":
+                case "LIST", "SET":
                     var attrs = {"type": e.type.name};
                     var val = xml.element({_attr: attrs});
                     root.push({"constant-expression": val});
@@ -404,6 +404,7 @@ function Reader(ret, stream) {
                                 break;
                             case "LIST":
                             case "MAP":
+                            case "SET":
                                 if(_.isUndefined(e.value)){
                                     e.value = [];
                                 }

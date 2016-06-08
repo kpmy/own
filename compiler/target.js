@@ -134,13 +134,15 @@ function Target(name, sc) {
                 case "STRING":
                 case "CHAR":
                 case "BLOCK":
+                case "TYPE":
                     ret = _.isEqual(o.type.name, src.type.name);
-                    if (!ret && _.isEqual(o.type.name, "BLOCK")){
+                    if (!ret && (_.isEqual(o.type.name, "BLOCK") || _.isEqual(o.type.name, "TYPE"))) {
                         ret = _.isEqual(src.type.name, "ANY")
                     }
                     break;
                 case "LIST":
                 case "MAP":
+                case "SET":
                     ret = true; //TODO добавить проверку
                     break;
                 default: throw new Error(`unsupported type check ${o.type.name}`);

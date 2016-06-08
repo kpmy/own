@@ -149,6 +149,23 @@ function Parser(sc, resolver) {
                 }
                 p.pr.next();
                 e.push(ast.expr().constant(types.LIST, val));
+            } else if (p.pr.is(sc.LBRUX)) {
+                p.pr.next();
+                var val = [];
+                if (!p.pr.wait(sc.RBRUX, sc.DELIMITER)) {
+                    for (var stop = false; !stop;) {
+                        var v = new Expression().noCall();
+                        val.push(v.value);
+                        if (!p.pr.wait(sc.COMMA, sc.DELIMITER)) {
+                            stop = true;
+                        } else {
+                            p.pr.next();
+                        }
+                    }
+                    p.pr.expect(sc.RBRUX);
+                }
+                p.pr.next();
+                e.push(ast.expr().constant(types.SET, val));
             } else if (p.pr.is(sc.LPAREN)) {
                 p.pr.next();
                 var ee = new Expression();

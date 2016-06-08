@@ -10,9 +10,7 @@ function Type(name, parse) {
     if (parse)
         t.parse = parse;
     else
-        t.parse = function (x) {
-            return x;
-        };
+        t.parse = (x) => x;
 
     t.name = name;
 }
@@ -80,6 +78,13 @@ function Types() {
 
             throw new Error(`unknown list value ${x}`);
         }),
+        "SET": t.SET = new Type("SET", function (x) {
+            if (_.isArray(x)) {
+                return x;
+            }
+
+            throw new Error(`unknown set value ${x}`);
+        }),
         "BLOCK": t.BLOCK = new Type("BLOCK", function (x) {
             if (typeof x == "string") {
                 return x;
@@ -89,7 +94,8 @@ function Types() {
                 return x;
             }
             throw new Error(`unknown block value ${x}`);
-        })
+        }),
+        "TYPE": t.TYPE = new Type("TYPE")
     };
 
     t.find = function (t) {
