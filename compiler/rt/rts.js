@@ -43,6 +43,9 @@ function defaultValue(t) {
         case "TYPE":
             ret = null;
             break;
+        case "ATOM":
+            ret = null;
+            break;
         default:
             throw new Error(`unknown default value for type ${t.name}`);
     }
@@ -117,6 +120,25 @@ function Obj(t, cv) {
             o.deref = notImpl;
             o.call = notImpl;
             o.select = notImpl;
+            break;
+        case "ATOM":
+            o.value = function (x) {
+                if (!(_.isNull(x) || _.isUndefined(x))) {
+                    should.ok(x instanceof Value);
+                    if (_.isEqual(o.type.base.name, "ATOM")){
+                        o.val.set(new Value("ATOM", x.value))
+                    } else if (_.isEqual(o.type.base.name, "ANY") && _.isNull(x.value)) {
+                        o.val.set(new Value("ATOM", null));
+                    } else {
+                        throw new Error(`types don't match ${o.type.base.name} ${x.type.name}`)
+                    }
+                }
+                return o.val.get();
+            };
+
+            o.call = notImpl;
+            o.select = notImpl;
+            o.deref = notImpl;
             break;
         case "ANY":
             o.value = function (x) {

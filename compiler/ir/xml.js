@@ -56,6 +56,7 @@ function Writer(mod, stream) {
                 case "BOOLEAN":
                 case "ANY":
                 case "BLOCK":
+                case "ATOM":
                     var attrs = {"type": e.type.name};
                     var val = e.value.toString();
                     should.exist(val);
@@ -68,7 +69,8 @@ function Writer(mod, stream) {
                     w.map(e.value, val);
                     val.close();
                     break;
-                case "LIST", "SET":
+                case "LIST":
+                case "SET":
                     var attrs = {"type": e.type.name};
                     var val = xml.element({_attr: attrs});
                     root.push({"constant-expression": val});
@@ -400,6 +402,7 @@ function Reader(ret, stream) {
                             case "ANY":
                             case "CHAR":
                             case "BLOCK":
+                            case "ATOM":
                                 e.setValue(x);
                                 break;
                             case "LIST":

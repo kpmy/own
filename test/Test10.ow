@@ -1,7 +1,14 @@
 UNIT Test10
+    CONST
+        @Magenta
+        @html: asdf;
+        455 -> int
+
 	VAR t TYPE
 	VAR s SET
+	VAR a ATOM
 START
 	<<1, 2, 3, 4>> -> s
 	\TYPEOF s -> t
+	@BurninChrome -> a
 END Test10

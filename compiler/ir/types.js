@@ -95,7 +95,28 @@ function Types() {
             }
             throw new Error(`unknown block value ${x}`);
         }),
-        "TYPE": t.TYPE = new Type("TYPE")
+        "TYPE": t.TYPE = new Type("TYPE", function (x) {
+            var ret;
+            if (_.isEqual(x, global.NONE)) {
+                ret = null;
+            } else {
+                ret = x;
+            }
+
+            return ret;
+        }),
+        "ATOM": t.ATOM = new Type("ATOM", function (x) {
+            var ret;
+            if (_.isEqual(x, global.NONE)) {
+                ret = null;
+            } else if (typeof x == "string") {
+                ret = x;
+            } else {
+                throw new Error(`unknown atom value ${x}`);
+            }
+
+            return ret;
+        })
     };
 
     t.find = function (t) {

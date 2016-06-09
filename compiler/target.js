@@ -127,6 +127,7 @@ function Target(name, sc) {
             var o = t.thisObj(tgt);
             switch (o.type.name){
                 case "ANY":
+                case "ATOM":
                     ret = true;
                     break;
                 case "INTEGER":
@@ -181,6 +182,8 @@ function Target(name, sc) {
                 case "MAP":
                 case "LIST":
                 case "BLOCK":
+                case "ATOM":
+                case "TYPE":
                     ret = true; //TODO fix type check
                     break;
                 default: throw new Error(`unsupported type check ${o.type.name}`)

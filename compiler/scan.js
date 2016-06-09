@@ -45,7 +45,8 @@ function Scanner(stream) {
     this.RBRUX = thisSym(">>");
     this.LBRACE = thisSym("{");
     this.RBRACE = thisSym("}");
-    this.SEPARATOR = thisSym(";");
+    this.SEPARATOR = thisSym("¶");
+    this.SEMICOLON = thisSym(";");
     this.DELIMITER = thisSym("` `");
     this.IDENT = thisSym("IDENT");
     this.STR = thisSym("STR");
@@ -60,6 +61,7 @@ function Scanner(stream) {
     this.TIMES = thisSym("*");
     this.CIRC = thisSym("^");
     this.COLON = thisSym(":");
+    this.BRICK = thisSym("::");
     this.DOLLAR = thisSym("$");
     this.PIPE = thisSym("|");
     this.AMP = thisSym("&");
@@ -71,6 +73,7 @@ function Scanner(stream) {
     this.LEQ = thisSym("<=");
     this.GEQ = thisSym(">=");
     this.FIX = thisSym("\\");
+    this.DOG = thisSym("@");
 
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -92,6 +95,7 @@ function Scanner(stream) {
 
     this["stream"] = stream;
     this["eof"] = false;
+    this.strict = false;
     this["pos"] = 0;
     this["ch"] = null;
     this["lines"] = {
@@ -321,6 +325,10 @@ function Scanner(stream) {
                     sym = this.GTR;
                 }
                 break;
+            case "@":
+                this.next();
+                sym = this.DOG;
+                break;
             case ",":
                 this.next();
                 sym = this.COMMA;
@@ -346,8 +354,12 @@ function Scanner(stream) {
                 sym = this.CIRC;
                 break;
             case ":":
-                this.next();
-                sym = this.COLON;
+                if (this.next() == ":"){
+                    sym = this.BRICK;
+                    this.next();
+                } else {
+                    sym = this.COLON;
+                }
                 break;
             case "+":
                 this.next();
@@ -382,11 +394,17 @@ function Scanner(stream) {
                 break;
             case "\r":
             case "\n":
-            case ";":
                 sym = this.SEPARATOR;
-                while (_.isEqual(this.ch, "\r") || _.isEqual(this.ch, "\n") || _.isEqual(this.ch, ";")) {
+                while (_.isEqual(this.ch, "\r") || _.isEqual(this.ch, "\n") || (!this.strict && _.isEqual(this.ch, ";"))) {
                     this.next();
                 }
+                break;
+            case ";":
+                if(this.strict)
+                    sym = this.SEMICOLON;
+                else
+                    sym = this.SEPARATOR;
+                this.next();
                 break;
             case "'":
             case '"':

@@ -21,9 +21,9 @@ function Parser(sc, resolver) {
         e.value = null;
         e.stack = [];
 
-        function existsBlock(obj) {
+        function existsBlock(obj, noFuture) {
             var exists = p.tgt.isBlock(obj.module, obj.name);
-            if (!exists && _.isEqual(obj.module, p.tgt.mod.name)) {
+            if (!exists && _.isEqual(obj.module, p.tgt.mod.name) && _.isUndefined(noFuture)) {
                 var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
                 var f = function (res, rej) {
                     var std = p.tgt.std();
@@ -38,9 +38,10 @@ function Parser(sc, resolver) {
                     }
                 };
                 p.tgt._resolvers.push(f);
-            } else if (!exists) {
+            } else if (!exists && _.isUndefined(noFuture)) {
                 p.sc.mark("imported object or block not found");
             }
+            return exists;
         }
 
         e.pop = function () {
@@ -93,6 +94,12 @@ function Parser(sc, resolver) {
                 } else {
                     e.push(ast.expr().constant(types.STRING, s.value));
                 }
+                p.pr.next();
+            } else if (p.pr.is(sc.DOG)){
+                p.pr.next();
+                p.pr.expect(sc.IDENT);
+                var id = p.pr.identifier(false);
+                e.push(ast.expr().constant(types.ATOM, id.id));
                 p.pr.next();
             } else if (p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
@@ -575,15 +582,24 @@ function Parser(sc, resolver) {
         for (var stop = false; !stop;) {
             p.pr.pass(sc.DELIMITER, sc.SEPARATOR);
             var e = new Expression();
-            p.pr.expect(sc.ASSIGN, sc.DELIMITER);
-            p.pr.next();
-            p.pr.expect(sc.IDENT, sc.DELIMITER);
-            var id = p.pr.identifier(false);
-            if (b.objects.hasOwnProperty(id.id)) {
-                p.sc.mark("identifier already exists");
-            }
-            p.pr.next();
+            var id = null;
             var cs = ast.constant();
+            if(ast.is(e.value).type("ConstExpr") && _.isEqual(e.value.type, types.ATOM)){
+                id = {id: e.value.value};
+                if (b.objects.hasOwnProperty(id.id)) {
+                    p.sc.mark("identifier already exists");
+                }
+                cs.mod = "r";
+            } else {
+                p.pr.expect(sc.ASSIGN, sc.DELIMITER);
+                p.pr.next();
+                p.pr.expect(sc.IDENT, sc.DELIMITER);
+                id = p.pr.identifier(false);
+                if (b.objects.hasOwnProperty(id.id)) {
+                    p.sc.mark("identifier already exists");
+                }
+                p.pr.next();
+            }
             cs.name = id.id;
             cs.expression = e.value;
             if (p.pr.wait(sc.TIMES)) {

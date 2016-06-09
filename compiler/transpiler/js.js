@@ -174,17 +174,23 @@ function Builder(mod, st) {
                 st.write(`)`)
             } else {
                 var v = e.value;
-                var enc = "utf8";
+                var enc = null;
                 if (_.isEqual(e.type.name, "ANY") && _.isEqual(v, "NONE")) {
                     v = "global.NONE";
                 } else if (_.isEqual(e.type.name, "STRING")) {
                     v = "`" + new Buffer(v).toString("base64") + "`";
                     enc = "base64";
+                } else if (_.isEqual(e.type.name, "ATOM")){
+                    v = "`" + v + "`";
                 } else if (_.isEqual(e.type.name, "CHAR")) {
                     v = v.charCodeAt(0);
                     enc = "charCode"
                 }
-                st.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
+                if(!_.isNull(enc)) {
+                    st.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
+                } else {
+                    st.write(`new rts.Value("${e.type.name}", ${v})`);
+                }
             }
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
