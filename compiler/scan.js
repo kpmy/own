@@ -90,7 +90,8 @@ function Scanner(stream) {
         
         "NONE": s.NONE = thisSym("NONE"),
         "TRUE": s.TRUE = thisSym("TRUE"),
-        "FALSE": s.FALSE = thisSym("FALSE")
+        "FALSE": s.FALSE = thisSym("FALSE"),
+        "NIL": s.NIL = thisSym("NIL")
     };
 
     this["stream"] = stream;

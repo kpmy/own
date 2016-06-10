@@ -5,10 +5,38 @@ const sax = require("sax");
 const _ = require('underscore');
 
 const ast = rerequire("./ast.js");
+const tpl = rerequire("./tpl.js").struct();
 const types = rerequire("./types.js")();
 
 function Writer(mod, stream) {
     const w = this;
+
+    w.tpl = function (t, root) {
+        var attrs = {};
+        if (!_.isUndefined(t.qid.tpl)) attrs.tpl = t.qid.tpl;
+        if (!_.isUndefined(t.qid.cls)) attrs.cls = t.qid.cls;
+        if (!_.isUndefined(t.qid.id)) attrs.id = t.qid.id;
+        if (t.unique) attrs.unique = t.unique;
+        var tn = xml.element({_attr: attrs});
+        root.push({"ot:object": tn});
+        t.children.forEach(v => {
+            if (tpl.isLeaf(v)) {
+                w.tpl(v, tn);
+            } else if (tpl.isValue(v)) {
+                var attrs = {type: v.type.name};
+                switch (v.type.name) {
+                    case "STRING":
+                        tn.push({"ot:value": [{_attr: attrs}, v.value]});
+                        break;
+                    default:
+                        throw new Error(`unknown child type ${JSON.stringify(v.type.name)}`);
+                }
+            } else {
+                throw new Error(`unknown child type ${v.constructor.name}`);
+            }
+        });
+        tn.close();
+    };
 
     w.sel = function (s, root) {
         var attrs = {
@@ -56,11 +84,24 @@ function Writer(mod, stream) {
                 case "BOOLEAN":
                 case "ANY":
                 case "BLOCK":
-                case "ATOM":
                     var attrs = {"type": e.type.name};
                     var val = e.value.toString();
                     should.exist(val);
                     root.push({"constant-expression": [{_attr: attrs}, val]});
+                    break;
+                case "ATOM":
+                    var attrs = {"type": e.type.name};
+                    if (_.isObject(e.structure)) {
+                        attrs.structured = true;
+                        var con = xml.element({_attr: attrs});
+                        root.push({"constant-expression": con});
+                        w.tpl(e.structure, con);
+                        con.close();
+                    } else {
+                        attrs.structured = false;
+                        var val = e.value.toString();
+                        root.push({"constant-expression": [{_attr: attrs}, val]});
+                    }
                     break;
                 case "MAP":
                     var attrs = {"type": e.type.name};
@@ -184,8 +225,8 @@ function Writer(mod, stream) {
     };
 
     w.build = function() {
-        stream.write('<?xml version="1.0" encoding="UTF-8"?>\n'); //header :(
-        var unit = xml.element({_attr: {name: mod.name}});
+        stream.write('<?xml version="1.0" encoding="UTF-8"?>'); //header :(
+        var unit = xml.element({_attr: {name: mod.name, "xmlns:ot": "urn:kpmy:ot"}});
         var xs = xml({"unit": unit}, {stream: true});
         xs.on("data", function (chunk) {
             stream.write(chunk);

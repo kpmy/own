@@ -17,13 +17,152 @@ function Parser(sc, resolver) {
 
     function Template(rid) {
         const struct = tpl.struct();
+        const instr = tpl.instr();
         const t = this;
+
+        t.ii = [];
+
+        t.emit = function (i) {
+            t.ii.push(i);
+        };
+
+        t.qualident = function () {
+            should.ok(p.pr.is(sc.IDENT));
+            var id = "";
+            var tid = p.pr.identifier(false).id;
+            p.pr.next();
+            if (p.pr.is(sc.TILD)) {
+                p.pr.expect(sc.IDENT, sc.TILD);
+                id = p.pr.identifier(false).id;
+                p.pr.next();
+            } else {
+                id = tid;
+                tid = "";
+            }
+            return {"id": id, "tid": tid}
+        };
+
+        t.block = function () {
+            p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
+            var bid = t.qualident();
+            if (p.pr.wait(sc.LPAREN)) {
+                p.pr.next();
+                p.pr.expect(sc.IDENT);
+                bid.uid = p.pr.identifier(false).id;
+                p.pr.next();
+                p.pr.expect(sc.RPAREN);
+                p.pr.next();
+            }
+            var em = new instr.Emit(bid.tid, bid.id, bid.uid);
+            t.emit(em);
+
+            let inner = function (e) {
+                for (var stop = false; !stop;) {
+                    e.children++;
+                    p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
+                    if (p.pr.is(sc.IDENT)) {
+                        t.block();
+                    } else if (p.pr.is(sc.NUM)) {
+                        var pt = new instr.Put();
+                        var value = p.pr.num();
+                        pt.type = value.type;
+                        pt.value = value.value;
+                        t.emit(pt);
+                        p.pr.next();
+                    } else if (p.pr.is(sc.MINUS)) {
+                        p.pr.next();
+                        var pt = new instr.Put();
+                        if (p.pr.wait(sc.NUMBER)) {
+                            var value = p.pr.num();
+                            pt.type = value.type;
+                            pt.value = -value.value;
+                        } else {
+                            p.sc.mark("number expected");
+                        }
+                        t.emit(pt);
+                    } else if (p.pr.is(sc.STR)) {
+                        var pt = new instr.Put();
+                        pt.type = types.STRING;
+                        pt.value = p.pr.sym.value;
+                        p.pr.next();
+                        if (p.pr.wait(sc.COLON, sc.DELIMITER, sc.SEPARATOR)) {
+                            p.pr.next();
+                            for (; ;) {
+                                if (p.pr.wait(sc.STR, sc.DELIMITER)) {
+                                    pt.value = pt.value.concat(p.pr.sym.value);
+                                    p.pr.next();
+                                } else if (p.pr.is(sc.NUM)) {
+                                    var num = p.pr.num();
+                                    if (_.isEqual(num.type, types.CHAR)) {
+                                        pt.value = pt.value.concat(num.value);
+                                    } else {
+                                        p.sc.mark("concat only char and string");
+                                    }
+                                    p.pr.next();
+                                }
+                                if (p.pr.wait(sc.COLON, sc.DELIMITER)) {
+                                    p.pr.next();
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                        t.emit(pt);
+                    } else if (p.pr.in(sc.TRUE, sc.FALSE, sc.NIL)) {
+                        var pt = new instr.Put();
+                        pt.type = types.TRILEAN;
+                        pt.value = p.pr.is(sc.NIL) ? null : p.pr.is(sc.FALSE) ? false : true;
+                        t.emit(pt);
+                        p.pr.next();
+                    } else if (p.pr.is(sc.DOG)) {
+                        p.pr.next();
+                        p.pr.expect(sc.IDENT);
+                        var pt = new instr.Put();
+                        pt.type = types.POINTER;
+                        pt.value = p.pr.identifier(false).id;
+                        p.pr.next();
+                        t.emit(pt);
+                    } else if (p.pr.is(sc.SEMICOLON)) {
+                        em.children--;
+                        stop = true;
+                    } else {
+                        p.sc.mark(`unexpected sym ${p.pr.sym.code}`);
+                    }
+                }
+            };
+
+            let down = function (reuse) {
+                t.emit(new instr.Dive(reuse));
+                p.pr.next();
+                inner(em);
+                p.pr.expect(sc.SEMICOLON, sc.DELIMITER, sc.SEPARATOR);
+                t.emit(new instr.Rise());
+                if (em.children == 0)
+                    p.pr.mark(":/:: is redundant for empty block");
+                p.pr.next();
+            };
+
+            if (p.pr.wait(sc.COLON)) {
+                down(false);
+            } else if (p.pr.is(sc.BRICK)) {
+                down(true);
+            } else {
+                //empty
+            }
+        };
 
         p.sc.strict = true;
         t.root = new struct.Leaf();
-        t.root.id = new struct.Qualident(rid);
-        t.down(t.root);
+        t.root.qid = new struct.Qualident(undefined, rid);
+        p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
+        t.block();
+        p.pr.expect(sc.SEMICOLON, sc.SEPARATOR, sc.DELIMITER);
+        p.pr.next();
         p.sc.strict = false;
+        var ret = struct.run(t.ii);
+        ret.up = t.root;
+        t.root.children.push(ret);
+        //console.dir(t.root, {depth: null});
     }
     
     function Expression() {
@@ -112,8 +251,11 @@ function Parser(sc, resolver) {
                 var id = p.pr.identifier(false);
                 p.pr.next();
                 if (p.pr.wait(sc.COLON)) {
-                    var t = new Template(d.id);
-                    e.push(ast.expr().constant(types.ATOM, id.id));
+                    p.pr.next();
+                    var t = new Template(id.id);
+                    var c = ast.expr().constant(types.ATOM, id.id);
+                    c.structure = t.root;
+                    e.push(c);
                 } else {
                     e.push(ast.expr().constant(types.ATOM, id.id));
                 }

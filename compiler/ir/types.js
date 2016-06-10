@@ -50,6 +50,15 @@ function Types() {
 
             throw new Error(`unknown bool value ${x}`);
         }),
+        "TRILEAN": t.TRILEAN = new Type("TRILEAN", function (x) {
+            if (_.isNull(x)) {
+                return null;
+            } else if (typeof x == "boolean") {
+                return x;
+            }
+            throw new Error(`unknown tril value ${x}`);
+        }),
+        "POINTER": t.POINTER = new Type("POINTER"),
         "STRING": t.STRING = new Type("STRING", function (x) {
             if (typeof x == "string") {
                 return x;

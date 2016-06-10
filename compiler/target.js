@@ -120,7 +120,7 @@ function Target(name, sc) {
     };
 
     t.compatibleTypes = function (tgt, src) {
-        console.log("compatibility test ", tgt, src);
+        //console.log("compatibility test ", tgt, src);
         var ret = false;
         function sel4const() {
             should.ok(_.isEmpty(tgt.inside));

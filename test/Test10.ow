@@ -1,7 +1,7 @@
 UNIT Test10
     CONST
         @Magenta
-        @html: asdf;
+        @html: body: attr::hello; p: br br "br";;;
         455 -> int
 
 	VAR t TYPE
