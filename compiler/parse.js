@@ -4,6 +4,7 @@ const _ = require("underscore");
 const Promise = require("bluebird");
 
 const ast = rerequire("./ir/ast.js");
+const tpl = rerequire("./ir/tpl.js");
 const types = rerequire("./ir/types.js")();
 
 function Parser(sc, resolver) {
@@ -14,7 +15,17 @@ function Parser(sc, resolver) {
     p["tgt"] = null;
     p["resolvers"] = [];
 
+    function Template(rid) {
+        const struct = tpl.struct();
+        const t = this;
 
+        p.sc.strict = true;
+        t.root = new struct.Leaf();
+        t.root.id = new struct.Qualident(rid);
+        t.down(t.root);
+        p.sc.strict = false;
+    }
+    
     function Expression() {
         const e = this;
 
@@ -99,8 +110,13 @@ function Parser(sc, resolver) {
                 p.pr.next();
                 p.pr.expect(sc.IDENT);
                 var id = p.pr.identifier(false);
-                e.push(ast.expr().constant(types.ATOM, id.id));
                 p.pr.next();
+                if (p.pr.wait(sc.COLON)) {
+                    var t = new Template(d.id);
+                    e.push(ast.expr().constant(types.ATOM, id.id));
+                } else {
+                    e.push(ast.expr().constant(types.ATOM, id.id));
+                }
             } else if (p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
                 console.log("factor", obj);
