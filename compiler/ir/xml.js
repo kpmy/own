@@ -103,6 +103,13 @@ function Writer(mod, stream) {
                         root.push({"constant-expression": [{_attr: attrs}, val]});
                     }
                     break;
+                case "TYPE":
+                    var attrs = {"type": e.type.name};
+                    var type = xml.element({_attr: attrs});
+                    root.push({"constant-expression": type});
+                    w.tpl(e.value, type);
+                    type.close();
+                    break;
                 case "MAP":
                     var attrs = {"type": e.type.name};
                     var val = xml.element({_attr: attrs});
@@ -208,6 +215,9 @@ function Writer(mod, stream) {
             }
             if (!_.isEmpty(o.modifier)) {
                 attrs["modifier"] = o.modifier;
+            }
+            if (!_.isUndefined(o.type.id)) {
+                attrs["id"] = o.type.id;
             }
             root.push({"variable": {_attr: attrs}});
         } else if (ast.is(o).type("Constant")) {
@@ -333,7 +343,12 @@ function Reader(ret, stream) {
                 case "variable":
                     var v = ast.variable();
                     v.name = n.attributes["name"];
-                    var t = types.find(n.attributes["type"]);
+                    var t = null;
+                    if (!_.isEqual(n.attributes["type"], "USER")) {
+                        t = types.find(n.attributes["type"]);
+                    } else {
+                        t = mod.thisType(n.attributes["id"]);
+                    }
                     should.exist(t);
                     v.type = t;
                     if(n.attributes.hasOwnProperty("param")){
@@ -456,6 +471,10 @@ function Reader(ret, stream) {
                                     e.structure = x;
                                 }
                                 break;
+                            case "TYPE":
+                                should.ok(tpl.isLeaf(x));
+                                e.setValue(x);
+                                break;
                             case "LIST":
                             case "MAP":
                             case "SET":
@@ -476,7 +495,7 @@ function Reader(ret, stream) {
                                 }
                                 break;
                             default:
-                                throw new Error(`unknown constant value ${x}`);
+                                throw new Error(`unknown constant value ${e.type.name}`);
                         }
                     });
                     break;

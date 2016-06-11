@@ -144,6 +144,7 @@ function Target(name, sc) {
                 case "LIST":
                 case "MAP":
                 case "SET":
+                case "USER":
                     ret = true; //TODO добавить проверку
                     break;
                 default: throw new Error(`unsupported type check ${o.type.name}`);

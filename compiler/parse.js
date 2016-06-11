@@ -158,8 +158,8 @@ function Parser(sc, resolver) {
         p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
         t.block();
         p.pr.expect(sc.SEMICOLON, sc.SEPARATOR, sc.DELIMITER);
+        p.sc.strict = false; //turn of semicolons
         p.pr.next();
-        p.sc.strict = false;
         var ret = struct.run(t.ii);
         ret.up = t.root;
         t.root.children.push(ret);
@@ -246,7 +246,7 @@ function Parser(sc, resolver) {
                     e.push(ast.expr().constant(types.STRING, s.value));
                 }
                 p.pr.next();
-            } else if (p.pr.is(sc.DOG)){
+            } else if (p.pr.is(sc.DOG)) {
                 p.pr.next();
                 p.pr.expect(sc.IDENT);
                 var id = p.pr.identifier(false);
@@ -260,6 +260,13 @@ function Parser(sc, resolver) {
                 } else {
                     e.push(ast.expr().constant(types.ATOM, id.id));
                 }
+            } else if (p.pr.is(sc.TYPE)) {
+                p.pr.next();
+                p.pr.expect(sc.COLON);
+                p.pr.next();
+                var t = new Template("TYPE");
+                var c = ast.expr().constant(types.TYPE, t.root);
+                e.push(c);
             } else if (p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
                 if (ast.is(obj).type("Selector")) {
@@ -518,7 +525,7 @@ function Parser(sc, resolver) {
             }
         };
 
-        p.pr.pass(sc.DELIMITER);
+        p.pr.pass(sc.DELIMITER, sc.SEPARATOR);
         e.expression();
         e.value = e.stack.pop();
         should.ok(_.isEmpty(e.stack));
@@ -585,14 +592,30 @@ function Parser(sc, resolver) {
 
     p.typ = function (ft) {
         should.ok(p.pr.is(sc.IDENT));
-        should.ok(!p.isMod());
-        let tid = p.pr.identifier().id;
-        var t = types.find(tid);
-        p.pr.next();
-        if (!_.isNull(t)) {
-            ft(t);
+        let tid = p.pr.identifier();
+        if (_.isNull(tid.module)) {
+            var t = types.find(tid.id);
+            p.pr.next();
+            if (!_.isNull(t)) {
+                ft(t);
+            } else if (p.tgt.block().objects.hasOwnProperty(tid.id)) {
+                var c = p.tgt.block().objects[tid.id];
+                if (ast.is(c).type("Constant")) {
+                    if (_.isEqual(c.expression.type, types.TYPE)) {
+                        t = types.userType(tid.id);
+                        t.value = c.expression.value;
+                        ft(t);
+                    } else {
+                        p.sc.mark("not a type");
+                    }
+                } else {
+                    p.sc.mark("variable types not supported for now");
+                }
+            } else {
+                p.sc.mark("type identifier not found");
+            }
         } else {
-            p.sc.mark("type not found ", tid);
+            p.sc.mark("not supported");
         }
     };
 
@@ -820,6 +843,9 @@ function Parser(sc, resolver) {
                 };
                 if (p.pr.wait(sc.IDENT, sc.DELIMITER)) {
                     p.typ(ft);
+                } else if (p.pr.is(sc.TYPE)) {
+                    ft(types.find("TYPE"));
+                    p.pr.next();
                 } else if (p.pr.is(sc.BLOCK)) {
                     ft(types.find("BLOCK"));
                     p.pr.next();

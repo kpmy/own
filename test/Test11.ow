@@ -1,0 +1,8 @@
+UNIT Test11
+    CONST
+        "Hi" -> hi
+        TYPE: BASE: INTEGER;; -> WEIGHT
+    VAR w WEIGHT
+START
+    10 -> w
+END Test11

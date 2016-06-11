@@ -73,7 +73,18 @@ function Builder(mod, stream) {
             throw new Error(`unknown scope ${scope.constructor.name}`);
         }
         should.exist(sc);
-        b.write(`${sc}$${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
+        if (_.isEqual(v.type.name, "USER")) {
+            b.write(`${sc}$${v.name} = new rts.Obj(`);
+            var ts = ast.selector();
+            ts.module = mod.name;
+            ts.name = v.type.id;
+            b.write(`new rts.Type("USER", "${ts.name}", `);
+            b.sel(ts);
+            b.write(".value()");
+            b.write(`));`);
+        } else {
+            b.write(`${sc}$${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
+        }
     };
 
     b.consts = function (c, scope) {
@@ -222,6 +233,10 @@ function Builder(mod, stream) {
                 } else {
                     b.write(`new rts.Value("${e.type.name}", "${e.value}")`);
                 }
+            } else if (_.isEqual(e.type.name, "TYPE")) {
+                b.write(`new rts.Value("${e.type.name}", `);
+                b.tpl(e.value);
+                b.write(`)`);
             } else {
                 var v = e.value;
                 var enc = null;

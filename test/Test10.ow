@@ -1,14 +1,15 @@
 UNIT Test10
     CONST
         @Magenta
-        @html: body: attr::hello; p: br br "br";;;
+        @html: body: attr::hello; p: br br "br";;;;;;;
         455 -> int
 
 	VAR t TYPE
 	VAR s SET
-	VAR a ATOM
+	VAR a, b ATOM
 START
 	<<1, 2, 3, 4>> -> s
 	\TYPEOF s -> t
 	@BurninChrome -> a
+	Magenta -> b
 END Test10

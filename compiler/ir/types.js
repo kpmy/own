@@ -132,7 +132,13 @@ function Types() {
 
     t.find = function (t) {
         var ret = map.hasOwnProperty(t) ? map[t] : null;
-        should.exist(ret);
+        return ret;
+    };
+
+    t.userType = function (id) {
+        var ret = new Type("USER");
+        ret.id = id;
+        ret.value = null;
         return ret;
     }
 }

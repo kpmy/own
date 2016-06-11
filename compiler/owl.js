@@ -82,7 +82,7 @@ module.exports = function (f) {
                                 const test = rts.load(mod.name);
                                 rts.dump();
                             });
-                        }, 100);
+                        }, 500);
                     });
                     readSource(root+"/"+mod.name + ".ox").then(rd);
                 }

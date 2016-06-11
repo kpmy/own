@@ -4,15 +4,23 @@ const types = rerequire("../ir/types.js")();
 const _ = require("underscore");
 const tpl = rerequire("../ir/tpl.js").struct();
 
-function Type(tn) {
+function Type(tn, id, value) {
     const t = this;
-    
-    t.base = types.find(tn);
+
+    if (_.isEqual(tn, "USER")) {
+        should.ok(value instanceof Value);
+        should.ok(_.isEqual(value.type.name, "TYPE"));
+        t.base = types.userType(id);
+        t.base.value = value.value;
+    } else {
+        t.base = types.find(tn);
+    }
     should.exist(t.base);
 }
 
 function defaultValue(t) {
     var ret = null;
+    var id = undefined;
     switch (t.name){
         case "INTEGER":
             ret = 0;
@@ -47,10 +55,14 @@ function defaultValue(t) {
         case "ATOM":
             ret = null;
             break;
+        case "USER":
+            ret = null;
+            id = t.id;
+            break; //TODO fix this default value
         default:
             throw new Error(`unknown default value for type ${t.name}`);
     }
-    return new Value(t.name, ret, "utf8");
+    return new Value(t.name, ret, "utf8", id);
 }
 
 function notImpl(){
@@ -331,17 +343,28 @@ function Obj(t, cv) {
             o.deref = notImpl;
             o.select = notImpl;
             break;
+        case "USER":
+            o.value = function (x) {
+            };
+            o.call = notImpl;
+            o.deref = notImpl;
+            o.select = notImpl;
+            break;
         default:
-            throw new Error(`not supported type ${JSON.stringify(t)}`)
+            throw new Error(`not supported type ${t.base.name} user type ${t.base.id}`);
     }
 }
 
-function Value(tn, val, enc) {
+function Value(tn, val, enc, userType) {
     const v = this;
-    
-    v.type = types.find(tn);
+    if (_.isUndefined(userType)) {
+        v.type = types.find(tn);
+        should.exist(v.type);
+    } else {
+        v.type = types.userType(userType);
+    }
+
     v.value = null;
-    should.exist(v.type);
 
     if(_.isUndefined(enc))
         enc = "utf8";

@@ -2,7 +2,7 @@
 const _ = require('underscore');
 const should = require('should');
 
-const types = rerequire("./types.js");
+const types = rerequire("./types.js")();
 
 function Selector() {
     this.module = null;
@@ -41,6 +41,23 @@ function Module() {
         var ret = null;
         ret = this.imports.find(x => _.isEmpty(x.alias) ? _.isEqual(x.name, name) : _.isEqual(x.alias, name));
         return _.isUndefined(ret) ? null : ret;
+    };
+
+    this.thisType = function (id) {
+        var ret = null;
+        var c = this.objects[id];
+        if (is(c).type("Constant")) {
+            console.dir(c, {depth: null});
+            if (_.isEqual(c.expression.type.name, "TYPE")) {
+                ret = types.userType(id);
+                ret.value = c.value;
+            } else {
+                throw new Error("0");
+            }
+        } else {
+            throw new Error("1")
+        }
+        return ret;
     }
 }
 
@@ -249,13 +266,15 @@ module.exports.formal = function () {
     return new FormalParam();
 };
 
-module.exports.is = function (o) {
+let is = function (o) {
     return {
         type: function (t) {
             return _.isEqual(o.constructor.name, t);
         }
     }
 };
+
+module.exports.is = is;
 
 module.exports.isStatement = function (x) {
     return (x instanceof Assign) || (x instanceof Call);

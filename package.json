@@ -4,8 +4,9 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-packager . own --platform=win32 --arch=x64 --version=0.37.8 --app-version=0.0.1 --out=dist --ignore=dist --prune"
+    "cons": "node cons.js",
+    "gui": "./node_modules/.bin/electron .",
+    "build-win-x86-64": "electron-packager . own --platform=win32 --arch=x64 --version=1.0.1 --app-version=0.0.1 --out=dist --ignore=dist --prune"
   },
   "dependencies": {
     "JSONStream": "^1.1.1",
