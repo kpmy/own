@@ -154,6 +154,7 @@ function Parser(sc, resolver) {
         p.sc.strict = true;
         t.root = new struct.Leaf();
         t.root.qid = new struct.Qualident(undefined, rid);
+        t.root.clazz = new struct.Clazz(undefined, rid);
         p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
         t.block();
         p.pr.expect(sc.SEMICOLON, sc.SEPARATOR, sc.DELIMITER);
@@ -261,7 +262,6 @@ function Parser(sc, resolver) {
                 }
             } else if (p.pr.is(sc.IDENT)) {
                 var obj = p.obj(p.tgt.block());
-                console.log("factor", obj);
                 if (ast.is(obj).type("Selector")) {
                     e.push(ast.expr().select(obj));
                 } else if (ast.is(obj).type("CallExpr")) {

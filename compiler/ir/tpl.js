@@ -22,6 +22,13 @@ function Leaf() {
     l.up = null;
     l.children = [];
     l.unique = false;
+
+    l.push = function (x) {
+        if (isLeaf(x))
+            x.up = l;
+
+        l.children.push(x);
+    }
 }
 
 function Value(type, value) {
@@ -30,6 +37,9 @@ function Value(type, value) {
     v.type = type;
 }
 
+let isLeaf = (x) => _.isEqual(x.constructor.name, "Leaf");
+let isValue = (x) => _.isEqual(x.constructor.name, "Value");
+
 function Struct() {
     const s = this;
     s.Qualident = Qualident;
@@ -37,8 +47,8 @@ function Struct() {
     s.Clazz = Clazz;
     s.Value = Value;
 
-    s.isLeaf = (x) => _.isEqual(x.constructor.name, "Leaf");
-    s.isValue = (x) => _.isEqual(x.constructor.name, "Value");
+    s.isLeaf = isLeaf;
+    s.isValue = isValue;
 
     s.run = function (t) {
         var st = [];

@@ -2,6 +2,7 @@
 const should = require("should");
 const types = rerequire("../ir/types.js")();
 const _ = require("underscore");
+const tpl = rerequire("../ir/tpl.js").struct();
 
 function Type(tn) {
     const t = this;
@@ -679,6 +680,8 @@ function RTS(pwd) {
     rts.Const = Const;
 
     rts.math = new ValueMath();
+    rts.types = types;
+    rts.tpl = tpl;
 
     rts.pwd = pwd;
     rts.modules = [];

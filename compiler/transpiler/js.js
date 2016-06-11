@@ -6,6 +6,7 @@ const _ = require('underscore');
 const Promise = require("bluebird");
 
 const ast = rerequire("../ir/ast.js");
+const tpl = rerequire("../ir/tpl.js").struct();
 
 function Builder(mod, st) {
     const b = this;
@@ -19,6 +20,43 @@ function Builder(mod, st) {
         if(x) st.write(x);
 
         st.write("\n");
+    };
+
+    b.val = function (v) {
+        var x = null;
+        switch (v.type.name) {
+            case "STRING":
+                x = "`" + v.value + "`";
+                break;
+            default:
+                throw new Error(`unknown value type ${v.type.name}`);
+        }
+        should.exist(x);
+        st.write(`function(){`);
+        st.write(`var v = new tpl.Value(types.find("${v.type.name}"), ${x});\n`);
+        st.write(`return v}()`)
+    };
+
+    b.tpl = function (t) {
+        st.write(`function(){`);
+        st.write(`var t = new tpl.Leaf();\n`);
+        var tp = _.isUndefined(t.qid.tpl) ? undefined : `"` + t.qid.tpl + `"`;
+        var cl = _.isUndefined(t.qid.cls) ? undefined : `"` + t.qid.cls + `"`;
+        var id = _.isUndefined(t.qid.id) ? undefined : `"` + t.qid.id + `"`;
+
+        st.write(`t.qid = new tpl.Qualident(${tp}, ${cl}, ${id});\n`);
+        st.write(`t.clazz = new tpl.Clazz(${tp}, ${cl});\n`);
+        st.write(`t.unique = ${t.unique};\n`);
+        t.children.forEach((x) => {
+            st.write(`t.push(`);
+            if (tpl.isLeaf(x)) {
+                b.tpl(x)
+            } else {
+                b.val(x)
+            }
+            st.write(");\n")
+        });
+        st.write(`return t}()`);
     };
 
     b.variable = function (v, scope) {
@@ -163,7 +201,7 @@ function Builder(mod, st) {
                         b.expr(o);
                     });
                 st.write(`])`)
-            } else if(_.isEqual(e.type.name, "BLOCK")){
+            } else if (_.isEqual(e.type.name, "BLOCK")) {
                 var mb = e.value.split(".");
                 should.exist(mb);
                 var bs = ast.selector();
@@ -172,6 +210,14 @@ function Builder(mod, st) {
                 st.write(`new rts.Value("${e.type.name}", `);
                 b.sel(bs);
                 st.write(`)`)
+            } else if (_.isEqual(e.type.name, "ATOM")) {
+                if (_.isObject(e.structure)) {
+                    st.write(`new rts.Value("${e.type.name}", `);
+                    b.tpl(e.structure);
+                    st.write(`)`);
+                } else {
+                    st.write(`new rts.Value("${e.type.name}", "${e.value}")`);
+                }
             } else {
                 var v = e.value;
                 var enc = null;
@@ -180,8 +226,6 @@ function Builder(mod, st) {
                 } else if (_.isEqual(e.type.name, "STRING")) {
                     v = "`" + new Buffer(v).toString("base64") + "`";
                     enc = "base64";
-                } else if (_.isEqual(e.type.name, "ATOM")){
-                    v = "`" + v + "`";
                 } else if (_.isEqual(e.type.name, "CHAR")) {
                     v = v.charCodeAt(0);
                     enc = "charCode"
@@ -368,7 +412,9 @@ function Builder(mod, st) {
 
     b.build = function () {
         st.write(`function Unit${mod.name} (rts){\n`);
-        st.write(`const mod = this;`);
+        st.write(`const types = rts.types;\n`);
+        st.write(`const tpl = rts.tpl;\n`);
+        st.write(`const mod = this;\n`);
         b.ln();
         mod.imports.forEach(function (i) {
             b.import(i);

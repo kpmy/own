@@ -120,6 +120,8 @@ function Types() {
                 ret = null;
             } else if (typeof x == "string") {
                 ret = x;
+            } else if (_.isObject(x) && (x.constructor.name == "Leaf")) {
+                ret = x;
             } else {
                 throw new Error(`unknown atom value ${x}`);
             }

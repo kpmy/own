@@ -434,6 +434,10 @@ function Reader(ret, stream) {
                     var t = types.find(n.attributes["type"]);
                     should.exist(t);
                     var e = ast.expr().constant(t);
+                    var structured = false;
+                    if (n.attributes.hasOwnProperty("structured")) {
+                        structured = JSON.parse(n.attributes["structured"]);
+                    }
                     push(e);
                     stack.push(function (x) {
                         switch (e.type.name){
@@ -444,7 +448,13 @@ function Reader(ret, stream) {
                             case "CHAR":
                             case "BLOCK":
                             case "ATOM":
-                                e.setValue(x);
+                                if (!structured) {
+                                    e.setValue(x);
+                                } else {
+                                    should.ok(tpl.isLeaf(x));
+                                    e.setValue(x.qid.cls);
+                                    e.structure = x;
+                                }
                                 break;
                             case "LIST":
                             case "MAP":
@@ -544,6 +554,38 @@ function Reader(ret, stream) {
                         }
                     });
                     break;
+                case "ot:value":
+                    var t = types.find(n.attributes["type"]);
+                    should.exist(t);
+                    var v = new tpl.Value(t);
+                    push(v);
+                    stack.push(function (x) {
+                        switch (v.type.name) {
+                            case "STRING":
+                                v.value = x;
+                                break;
+                            default:
+                                throw new Error(`unknown ot:value type ${v.type.name}`);
+                        }
+                    });
+                    break;
+                case "ot:object":
+                    var o = new tpl.Leaf();
+                    o.qid = new tpl.Qualident(n.attributes["tpl"], n.attributes["cls"], n.attributes["id"]);
+                    o.clazz = new tpl.Clazz(o.qid.tpl, o.qid.cls);
+                    if (n.attributes.hasOwnProperty("unique")) o.unique = JSON.parse(n.attributes["unique"]);
+                    push(o);
+                    stack.push(function (x) {
+                        if (tpl.isLeaf(x)) {
+                            x.up = o;
+                            o.children.push(x);
+                        } else if (tpl.isValue(x)) {
+                            o.children.push(x);
+                        } else {
+                            throw new Error(`unknown ot:object child ${x.constructor.name}`);
+                        }
+                    });
+                    break;
                 default:
                     throw new Error("unknown tag "+n.name);
             }
@@ -578,6 +620,8 @@ function Reader(ret, stream) {
                 case "monadic-op":
                 case "infix-expression":
                 case "constant":
+                case "ot:value":
+                case "ot:object":
                     stack.pop();
                     break;
                 case "expression":

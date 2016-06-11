@@ -68,7 +68,6 @@ function Import() {
 
     this.thisBlock = function (name) {
         console.log(`find imp block ${name}`);
-        console.dir(this);
         var ret = null;
         ret = this.def.blocks.find(x => _.isEqual(x.name, name));
         return _.isUndefined(ret) ? null : ret;
@@ -76,7 +75,6 @@ function Import() {
 
     this.thisObj = function(name){
         console.log(`find imp obj ${name}`);
-        console.dir(this);
         var ret = null;
         ret = this.def.objects.hasOwnProperty(name) ? this.def.objects[name] : null;
         return _.isUndefined(ret) ? null : ret;
