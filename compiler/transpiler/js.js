@@ -8,7 +8,7 @@ const Promise = require("bluebird");
 const ast = rerequire("../ir/ast.js");
 const tpl = rerequire("../ir/tpl.js").struct();
 
-function Builder(mod, st) {
+function Builder(mod, stream) {
     const b = this;
     b.count = 0;
     b.nextInt = () => {
@@ -17,9 +17,13 @@ function Builder(mod, st) {
     };
 
     b.ln = function (x) {
-        if(x) st.write(x);
+        if (x) stream.write(x);
 
-        st.write("\n");
+        stream.write("\n");
+    };
+
+    b.write = function (x) {
+        stream.write(x);
     };
 
     b.val = function (v) {
@@ -32,31 +36,31 @@ function Builder(mod, st) {
                 throw new Error(`unknown value type ${v.type.name}`);
         }
         should.exist(x);
-        st.write(`function(){`);
-        st.write(`var v = new tpl.Value(types.find("${v.type.name}"), ${x});\n`);
-        st.write(`return v}()`)
+        b.write(`function(){`);
+        b.write(`var v = new tpl.Value(types.find("${v.type.name}"), ${x});\n`);
+        b.write(`return v}()`)
     };
 
     b.tpl = function (t) {
-        st.write(`function(){`);
-        st.write(`var t = new tpl.Leaf();\n`);
+        b.write(`function(){`);
+        b.write(`var t = new tpl.Leaf();\n`);
         var tp = _.isUndefined(t.qid.tpl) ? undefined : `"` + t.qid.tpl + `"`;
         var cl = _.isUndefined(t.qid.cls) ? undefined : `"` + t.qid.cls + `"`;
         var id = _.isUndefined(t.qid.id) ? undefined : `"` + t.qid.id + `"`;
 
-        st.write(`t.qid = new tpl.Qualident(${tp}, ${cl}, ${id});\n`);
-        st.write(`t.clazz = new tpl.Clazz(${tp}, ${cl});\n`);
-        st.write(`t.unique = ${t.unique};\n`);
+        b.write(`t.qid = new tpl.Qualident(${tp}, ${cl}, ${id});\n`);
+        b.write(`t.clazz = new tpl.Clazz(${tp}, ${cl});\n`);
+        b.write(`t.unique = ${t.unique};\n`);
         t.children.forEach((x) => {
-            st.write(`t.push(`);
+            b.write(`t.push(`);
             if (tpl.isLeaf(x)) {
                 b.tpl(x)
             } else {
                 b.val(x)
             }
-            st.write(");\n")
+            b.write(");\n")
         });
-        st.write(`return t}()`);
+        b.write(`return t}()`);
     };
 
     b.variable = function (v, scope) {
@@ -69,7 +73,7 @@ function Builder(mod, st) {
             throw new Error(`unknown scope ${scope.constructor.name}`);
         }
         should.exist(sc);
-        st.write(`${sc}$${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
+        b.write(`${sc}$${v.name} = new rts.Obj(new rts.Type("${v.type.name}"));`)
     };
 
     b.consts = function (c, scope) {
@@ -82,9 +86,9 @@ function Builder(mod, st) {
             throw new Error(`unknown scope ${scope.constructor.name}`);
         }
         should.exist(sc);
-        st.write(`${sc}$${c.name} = new rts.Const(`);
+        b.write(`${sc}$${c.name} = new rts.Const(`);
         b.expr(c.expression);
-        st.write(`);`);
+        b.write(`);`);
     };
 
     b.sel = function (s) {
@@ -93,24 +97,24 @@ function Builder(mod, st) {
             if(!_.isNull(s.block)) {
                 sc = "";
             }
-            st.write(`${sc}$${s.name}`);
+            b.write(`${sc}$${s.name}`);
         } else {
             should.ok(_.isNull(s.block)); //foreign blocks should be inaccessible
-            st.write(`mod.Import${s.module}.$${s.name}`);
+            b.write(`mod.Import${s.module}.$${s.name}`);
         }
 
         function select(el) {
             should.ok(el.length > 0);
-            st.write(".select(");
+            b.write(".select(");
             Array.from(el)
                 .forEach((o, i, l) => {
-                    if (i>0) st.write(",");
+                    if (i > 0) b.write(",");
                     b.expr(o);
                 });
-            st.write(")");
+            b.write(")");
         }
         function deref() {
-            st.write(".deref()");
+            b.write(".deref()");
         }
         function flush(eb) {
             if (eb.length > 0)
@@ -150,7 +154,7 @@ function Builder(mod, st) {
             console.log(p);
             if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
                 if (typeof p == "string") { //temporary
-                    st.write(p);
+                    b.write(p);
                     valueParam = false;
                 } else if (ast.is(p.expression).type("SelectExpr")) {
                     if(!_.isEqual(mod.name, p.expression.selector.module)){
@@ -163,7 +167,7 @@ function Builder(mod, st) {
                 }
             } else if (_.isUndefined(block)){
                 if (typeof p == "string") { //temporary
-                    st.write(p);
+                    b.write(p);
                 } else if (ast.is(p).type("SelectExpr")) {
                     b.sel(p.selector);
                 } else {
@@ -179,44 +183,44 @@ function Builder(mod, st) {
     };
 
     b.expr = function (e) {
-        st.write("(");
+        b.write("(");
         if(ast.is(e).type("ConstExpr")) {
             if (_.isEqual(e.type.name, "MAP")) {
-                st.write(`new rts.Value("${e.type.name}", [`);
+                b.write(`new rts.Value("${e.type.name}", [`);
                 Array.from(e.value)
                     .forEach((o, i, a) => {
-                        if(i > 0) st.write(",\n");
-                        st.write("[");
+                        if (i > 0) b.write(",\n");
+                        b.write("[");
                         b.expr(o[0]);
-                        st.write(",\t");
+                        b.write(",\t");
                         b.expr(o[1]);
-                        st.write("]")
+                        b.write("]")
                     });
-                st.write(`])`)
+                b.write(`])`)
             } else if (_.isEqual(e.type.name, "LIST") || _.isEqual(e.type.name, "SET")) {
-                st.write(`new rts.Value("${e.type.name}", [`);
+                b.write(`new rts.Value("${e.type.name}", [`);
                 Array.from(e.value)
                     .forEach((o, i, a) => {
-                        if (i > 0) st.write(",\n");
+                        if (i > 0) b.write(",\n");
                         b.expr(o);
                     });
-                st.write(`])`)
+                b.write(`])`)
             } else if (_.isEqual(e.type.name, "BLOCK")) {
                 var mb = e.value.split(".");
                 should.exist(mb);
                 var bs = ast.selector();
                 bs.module = mb[0];
                 bs.name = mb[1];
-                st.write(`new rts.Value("${e.type.name}", `);
+                b.write(`new rts.Value("${e.type.name}", `);
                 b.sel(bs);
-                st.write(`)`)
+                b.write(`)`)
             } else if (_.isEqual(e.type.name, "ATOM")) {
                 if (_.isObject(e.structure)) {
-                    st.write(`new rts.Value("${e.type.name}", `);
+                    b.write(`new rts.Value("${e.type.name}", `);
                     b.tpl(e.structure);
-                    st.write(`)`);
+                    b.write(`)`);
                 } else {
-                    st.write(`new rts.Value("${e.type.name}", "${e.value}")`);
+                    b.write(`new rts.Value("${e.type.name}", "${e.value}")`);
                 }
             } else {
                 var v = e.value;
@@ -231,9 +235,9 @@ function Builder(mod, st) {
                     enc = "charCode"
                 }
                 if(!_.isNull(enc)) {
-                    st.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
+                    b.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
                 } else {
-                    st.write(`new rts.Value("${e.type.name}", ${v})`);
+                    b.write(`new rts.Value("${e.type.name}", ${v})`);
                 }
             }
         } else if (ast.is(e).type("CallExpr")) {
@@ -247,31 +251,31 @@ function Builder(mod, st) {
                 block = mod.thisBlock(e.name);
             }
             should.exist(block); //ast.Block or object from def
-            st.write(`${m}.$${e.name}(`);
+            b.write(`${m}.$${e.name}(`);
             b.params(e.params, block);
-            st.write(`)`);
+            b.write(`)`);
         } else if (ast.is(e).type("SelectExpr")) {
-            st.write("rts.copyOf(");
+            b.write("rts.copyOf(");
             b.sel(e.selector);
-            st.write(".value())");
+            b.write(".value())");
         } else if (ast.is(e).type("DyadicOp")) {
-            st.write("rts.math.dop(");
-            st.write("function(){return ");
+            b.write("rts.math.dop(");
+            b.write("function(){return ");
             b.expr(e.left);
-            st.write("}, ");
-            st.write(`"${e.op}", `);
-            st.write("function(){return ");
+            b.write("}, ");
+            b.write(`"${e.op}", `);
+            b.write("function(){return ");
             b.expr(e.right);
-            st.write("}");
-            st.write(")");
+            b.write("}");
+            b.write(")");
         } else if (ast.is(e).type("MonadicOp")) {
-            st.write(`rts.math.mop("${e.op}", `);
-            st.write("function(){return ");
+            b.write(`rts.math.mop("${e.op}", `);
+            b.write("function(){return ");
             b.expr(e.expr);
-            st.write("}");
-            st.write(")")
+            b.write("}");
+            b.write(")")
         } else if (ast.is(e).type("InfixExpr")) {
-            st.write(`function(){ `);
+            b.write(`function(){ `);
             if (!_.isNull(e.expression)) {
                 var m = "mod";
                 var block = null;
@@ -305,18 +309,18 @@ function Builder(mod, st) {
                 });
                 e.expression.params = tp;
                 should.exist(tmpType);
-                st.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
+                b.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
                 console.dir(e, {depth: null});
                 b.expr(e.expression);
                 b.ln(";");
-                st.write(`return ${tmp}.value();`);
+                b.write(`return ${tmp}.value();`);
             } else {
                 var inside = e.params.slice();
                 console.log(inside);
                 e.selector.inside = [];
                 var tmp = "tmp" + b.nextInt();
                 var tmpType = "ANY";
-                st.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
+                b.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
                 var fp = [];
                 if (inside.length < 2) {
                     fp.push(tmp, inside[0]);
@@ -327,24 +331,24 @@ function Builder(mod, st) {
                     }
                 }
                 b.sel(e.selector);
-                st.write(".call(");
+                b.write(".call(");
                 b.params(fp);
-                st.write(");\n");
-                st.write(`return ${tmp}.deref().value();`);
+                b.write(");\n");
+                b.write(`return ${tmp}.deref().value();`);
             }
-            st.write("}()");
+            b.write("}()");
         } else {
             throw new Error("unknown expression " + e.constructor.name);
         }
-        st.write(")");
+        b.write(")");
     };
 
     b.stmt = function (s) {
         if(ast.is(s).type("Assign")) {
             b.sel(s.selector);
-            st.write(".value(");
+            b.write(".value(");
             b.expr(s.expression);
-            st.write(")");
+            b.write(")");
         } else if(ast.is(s).type("Call")){
             if(!_.isNull(s.expression)) {
                 b.expr(s.expression);
@@ -352,9 +356,9 @@ function Builder(mod, st) {
                 var inside = s.selector.inside.slice();
                  s.selector.inside = [];
                 b.sel(s.selector);
-                st.write(".call(");
+                b.write(".call(");
                 b.params(inside);
-                st.write(")");
+                b.write(")");
             } else {
                 throw new Error("wrong call");
             }
@@ -364,9 +368,9 @@ function Builder(mod, st) {
     };
 
     b.block = function (block) {
-        st.write(`mod.$${block.name} = function(){\n`);
-        st.write(`console.log("enter ${mod.name}.${block.name}");\n`);
-        st.write(`console.dir(arguments, {depth: null});\n`);
+        b.write(`mod.$${block.name} = function(){\n`);
+        b.write(`console.log("enter ${mod.name}.${block.name}");\n`);
+        b.write(`console.dir(arguments, {depth: null});\n`);
         var par = [];
         for(v in block.objects) {
             var o = block.objects[v];
@@ -384,14 +388,14 @@ function Builder(mod, st) {
             .sort((p0, p1) => p0.param.number - p1.param.number)
             .forEach((o, i, $) => {
             if(_.isEqual(o.param.type, "reference")){
-                st.write(`if(arguments[${i}] !== undefined){\n`);
-                st.write(`if(!rts.isValue(arguments[${i}])){\n`);
-                st.write(`$${o.name} = arguments[${i}];\n`); //reference param
-                st.write(`} else {\n`);
-                st.write(`$${o.name}.value(arguments[${i}]);\n`);
+                b.write(`if(arguments[${i}] !== undefined){\n`);
+                b.write(`if(!rts.isValue(arguments[${i}])){\n`);
+                b.write(`$${o.name} = arguments[${i}];\n`); //reference param
+                b.write(`} else {\n`);
+                b.write(`$${o.name}.value(arguments[${i}]);\n`);
                 b.ln("}"); b.ln("}");
             } else {
-                st.write(`$${o.name}.value(arguments[${i}]);`);
+                b.write(`$${o.name}.value(arguments[${i}]);`);
             }
             b.ln();
         });
@@ -399,22 +403,22 @@ function Builder(mod, st) {
             b.stmt(s);
             b.ln(";");
         });
-        st.write(`console.log("leave ${mod.name}.${block.name}");\n`);
-        st.write(`}`);
+        b.write(`console.log("leave ${mod.name}.${block.name}");\n`);
+        b.write(`}`);
     };
 
     b.import = function (imp) {
-        st.write(`mod.Import${imp.name} = rts.load("${imp.name}");\n`);
+        b.write(`mod.Import${imp.name} = rts.load("${imp.name}");\n`);
         if (!_.isEmpty(imp.alias)) {
-            st.write(`mod.Import${imp.alias} = mod.Import${imp.name};\n`);
+            b.write(`mod.Import${imp.alias} = mod.Import${imp.name};\n`);
         }
     };
 
     b.build = function () {
-        st.write(`function Unit${mod.name} (rts){\n`);
-        st.write(`const types = rts.types;\n`);
-        st.write(`const tpl = rts.tpl;\n`);
-        st.write(`const mod = this;\n`);
+        b.write(`function Unit${mod.name} (rts){\n`);
+        b.write(`const types = rts.types;\n`);
+        b.write(`const tpl = rts.tpl;\n`);
+        b.write(`const mod = this;\n`);
         b.ln();
         mod.imports.forEach(function (i) {
             b.import(i);
@@ -440,9 +444,9 @@ function Builder(mod, st) {
             b.ln(`;`);
         });
 
-        st.write(`mod.start = function(){\n`);
+        b.write(`mod.start = function(){\n`);
 
-        st.write(`console.log('dynamic load ${mod.name}'); \n`);
+        b.write(`console.log('dynamic load ${mod.name}'); \n`);
         
         if(!_.isEmpty(mod.start)){
             mod.start.forEach(function(s){
@@ -455,7 +459,7 @@ function Builder(mod, st) {
 
         b.ln(`};`);
 
-        st.write(`module.exports = function(rts){return new Unit${mod.name} (rts)};`);
+        b.write(`module.exports = function(rts){return new Unit${mod.name} (rts)};`);
     };
 }
 
