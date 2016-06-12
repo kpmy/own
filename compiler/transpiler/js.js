@@ -364,12 +364,12 @@ function Builder(mod, stream) {
             b.write(".value(");
             b.expr(s.expression);
             b.write(")");
-        } else if(ast.is(s).type("Call")){
-            if(!_.isNull(s.expression)) {
+        } else if (ast.is(s).type("Call")) {
+            if (!_.isNull(s.expression)) {
                 b.expr(s.expression);
-            } else if (!_.isNull(s.selector)){
+            } else if (!_.isNull(s.selector)) {
                 var inside = s.selector.inside.slice();
-                 s.selector.inside = [];
+                s.selector.inside = [];
                 b.sel(s.selector);
                 b.write(".call(");
                 b.params(inside);
@@ -377,6 +377,53 @@ function Builder(mod, stream) {
             } else {
                 throw new Error("wrong call");
             }
+        } else if (ast.is(s).type("Conditional")) {
+            s.branches.forEach((br, i, $) => {
+                if (i > 0) b.write(" else ");
+                b.write(`if(rts.getNative("boolean", `);
+                b.expr(br.condition);
+                b.ln(`)){`);
+                br.sequence.forEach(s => {
+                    b.stmt(s);
+                    b.ln(";");
+                });
+                b.write(`}`);
+            });
+            if (!_.isEmpty(s.otherwise)) {
+                b.ln(`else {`);
+                s.otherwise.forEach(s => {
+                    b.stmt(s);
+                    b.ln(`;`);
+                });
+                b.write(`}`)
+            }
+        } else if (ast.is(s).type("Cycle")) {
+            var cond = "cond" + b.nextInt();
+            b.ln(`for (var ${cond} = true; ${cond}; ){`);
+            s.branches.forEach((br, i, $) => {
+                if (i > 0) b.write(" else ");
+                b.write(`if(rts.getNative("boolean", `);
+                b.expr(br.condition);
+                b.ln(`)){`);
+                br.sequence.forEach(s => {
+                    b.stmt(s);
+                    b.ln(";");
+                });
+                b.write(`}`);
+            });
+            b.write(`else { `);
+            b.write(`${cond} = false; }`);
+            b.write(`}`);
+        } else if (ast.is(s).type("InvCycle")) {
+            var cond = "cond" + b.nextInt();
+            b.ln(`for (var ${cond} = false; !${cond}; ){`);
+            s.value.sequence.forEach(s => {
+                b.stmt(s);
+                b.ln(";");
+            });
+            b.write(`${cond} = rts.getNative("boolean", `);
+            b.expr(s.value.condition);
+            b.write(`)}`);
         } else {
             throw new Error("unknown statement " + s.constructor.name);
         }

@@ -36,44 +36,44 @@ function isNum(ch) {
 function Scanner(stream) {
     const s = this;
 
-    this.EOF = new Sym("EOF");
-    this.START = new Sym("START"); //dumb sym
-    this.EMPTY = new Sym("EMPTY");
-    this.LPAREN = thisSym("(");
-    this.RPAREN = thisSym(")");
-    this.LBRUX = thisSym("<<");
-    this.RBRUX = thisSym(">>");
-    this.LBRACE = thisSym("{");
-    this.RBRACE = thisSym("}");
-    this.SEPARATOR = thisSym("¶");
-    this.SEMICOLON = thisSym(";");
-    this.DELIMITER = thisSym("` `");
-    this.IDENT = thisSym("IDENT");
-    this.STR = thisSym("STR");
-    this.NUM = thisSym("NUM");
-    this.ASSIGN = thisSym("->");
-    this.MINUS = thisSym("-");
-    this.PLUS = thisSym("+");
-    this.COMMA = thisSym(",");
-    this.DOT = thisSym(".");
-    this.LBRAK = thisSym("[");
-    this.RBRAK = thisSym("]");
-    this.TIMES = thisSym("*");
-    this.CIRC = thisSym("^");
-    this.COLON = thisSym(":");
-    this.BRICK = thisSym("::");
-    this.DOLLAR = thisSym("$");
-    this.PIPE = thisSym("|");
-    this.AMP = thisSym("&");
-    this.TILD = thisSym("~");
-    this.EQL = thisSym("=");
-    this.NEQ = thisSym("#");
-    this.LSS = thisSym("<");
-    this.GTR = thisSym(">");
-    this.LEQ = thisSym("<=");
-    this.GEQ = thisSym(">=");
-    this.FIX = thisSym("\\");
-    this.DOG = thisSym("@");
+    s.EOF = new Sym("EOF");
+    s.START = new Sym("START"); //dumb sym
+    s.EMPTY = new Sym("EMPTY");
+    s.LPAREN = thisSym("(");
+    s.RPAREN = thisSym(")");
+    s.LBRUX = thisSym("<<");
+    s.RBRUX = thisSym(">>");
+    s.LBRACE = thisSym("{");
+    s.RBRACE = thisSym("}");
+    s.SEPARATOR = thisSym("¶");
+    s.SEMICOLON = thisSym(";");
+    s.DELIMITER = thisSym("` `");
+    s.IDENT = thisSym("IDENT");
+    s.STR = thisSym("STR");
+    s.NUM = thisSym("NUM");
+    s.ASSIGN = thisSym("->");
+    s.MINUS = thisSym("-");
+    s.PLUS = thisSym("+");
+    s.COMMA = thisSym(",");
+    s.DOT = thisSym(".");
+    s.LBRAK = thisSym("[");
+    s.RBRAK = thisSym("]");
+    s.TIMES = thisSym("*");
+    s.CIRC = thisSym("^");
+    s.COLON = thisSym(":");
+    s.BRICK = thisSym("::");
+    s.DOLLAR = thisSym("$");
+    s.PIPE = thisSym("|");
+    s.AMP = thisSym("&");
+    s.TILD = thisSym("~");
+    s.EQL = thisSym("=");
+    s.NEQ = thisSym("#");
+    s.LSS = thisSym("<");
+    s.GTR = thisSym(">");
+    s.LEQ = thisSym("<=");
+    s.GEQ = thisSym(">=");
+    s.FIX = thisSym("\\");
+    s.DOG = thisSym("@");
 
     this["keyTab"] = {
         "UNIT": s.UNIT = thisSym("UNIT"),
@@ -92,7 +92,16 @@ function Scanner(stream) {
         "TRUE": s.TRUE = thisSym("TRUE"),
         "FALSE": s.FALSE = thisSym("FALSE"),
         "NIL": s.NIL = thisSym("NIL"),
-        "TYPE": s.TYPE = thisSym("TYPE")
+        "TYPE": s.TYPE = thisSym("TYPE"),
+
+        "IF": s.IF = thisSym("IF"),
+        "THEN": s.THEN = thisSym("THEN"),
+        "ELSE": s.ELSE = thisSym("ELSE"),
+        "ELSIF": s.ELSIF = thisSym("ELSIF"),
+        "WHILE": s.WHILE = thisSym("WHILE"),
+        "DO": s.DO = thisSym("DO"),
+        "REPEAT": s.REPEAT = thisSym("REPEAT"),
+        "UNTIL": s.UNTIL = thisSym("UNTIL")
     };
 
     this["stream"] = stream;

@@ -183,6 +183,16 @@ function Writer(mod, stream) {
         ex.close();
     };
 
+    w.branch = function (b, root) {
+        var br = xml.element();
+        root.push({"branch": br});
+        w.expr(b.condition, "condition", br);
+        b.sequence.forEach(s => {
+            w.stmt(s, br);
+        });
+        br.close();
+    };
+
     w.stmt = function (s, root) {
         if(ast.is(s).type("Assign")) {
             var ass = xml.element();
@@ -193,14 +203,41 @@ function Writer(mod, stream) {
         } else if(ast.is(s).type("Call")) {
             var call = xml.element();
             root.push({"call": call});
-            if(!_.isNull(s.expression)) {
+            if (!_.isNull(s.expression)) {
                 w.expr(s.expression, "expression", call);
-            } else if (!_.isNull(s.selector)){
+            } else if (!_.isNull(s.selector)) {
                 w.sel(s.selector, call);
             } else {
                 throw new Error("error in call");
             }
             call.close();
+        } else if (ast.is(s).type("Conditional")) {
+            var cond = xml.element();
+            root.push({"if": cond});
+            s.branches.forEach(br => {
+                w.branch(br, cond);
+            });
+            if (!_.isEmpty(s.otherwise)) {
+                var els = xml.element();
+                cond.push({"else": els});
+                s.otherwise.forEach(s => {
+                    w.stmt(s, els);
+                });
+                els.close();
+            }
+            cond.close();
+        } else if (ast.is(s).type("Cycle")) {
+            var cond = xml.element();
+            root.push({"while": cond});
+            s.branches.forEach(br => {
+                w.branch(br, cond);
+            });
+            cond.close();
+        } else if (ast.is(s).type("InvCycle")) {
+            var cond = xml.element();
+            root.push({"repeat": cond});
+            w.branch(s.value, cond);
+            cond.close();
         } else {
             throw new Error("unexpected statement "+s.constructor.name);
         }
@@ -412,6 +449,41 @@ function Reader(ret, stream) {
                         }
                     });
                     break;
+                case "if":
+                    var c = ast.stmt().cond();
+                    push(c);
+                    stack.push(function (x) {
+                        if (ast.is(x).type("ConditionalBranch")) {
+                            c.branches.push(x)
+                        } else if (ast.isStatement(x)) {
+                            c.otherwise.push(x);
+                        } else {
+                            throw new Error(`unknown object for if ${x.constructor.name}`);
+                        }
+                    });
+                    break;
+                case "while":
+                    var c = ast.stmt().cycle();
+                    push(c);
+                    stack.push(function (x) {
+                        if (ast.is(x).type("ConditionalBranch")) {
+                            c.branches.push(x)
+                        } else {
+                            throw new Error(`unknown object for while ${x.constructor.name}`);
+                        }
+                    });
+                    break;
+                case "repeat":
+                    var c = ast.stmt().invCycle();
+                    push(c);
+                    stack.push(function (x) {
+                        if (ast.is(x).type("ConditionalBranch")) {
+                            c.value = x;
+                        } else {
+                            throw new Error(`unknown object for repeat ${x.constructor.name}`);
+                        }
+                    });
+                    break;
                 case "selector":
                     var s = ast.selector();
                     s.module = n.attributes["module"];
@@ -435,7 +507,9 @@ function Reader(ret, stream) {
                     stackTypes.push(n.name);
                     break;
                 case "expression":
-                    //begin of any expression, do nothing
+                case "condition":
+                case "else":
+                    //begin of any expression or sequence, do nothing
                     break;
                 case "parameter":
                     var p = ast.expr().call().param();
@@ -605,6 +679,19 @@ function Reader(ret, stream) {
                         }
                     });
                     break;
+                case "branch":
+                    var b = ast.stmt().cond().branch();
+                    push(b);
+                    stack.push(function (x) {
+                        if (ast.isExpression(x)) {
+                            b.condition = x;
+                        } else if (ast.isStatement(x)) {
+                            b.sequence.push(x);
+                        } else {
+                            throw new Error(`unknown object for branch ${x.constructor.name}`);
+                        }
+                    });
+                    break;
                 default:
                     throw new Error("unknown tag "+n.name);
             }
@@ -641,6 +728,10 @@ function Reader(ret, stream) {
                 case "constant":
                 case "ot:value":
                 case "ot:object":
+                case "if":
+                case "branch":
+                case "while":
+                case "repeat":
                     stack.pop();
                     break;
                 case "expression":
@@ -648,6 +739,8 @@ function Reader(ret, stream) {
                 case "variable":
                 case "deref-expression":
                 case "dot-expression":
+                case "else":
+                case "condition":
                     //do nothing
                     break;
                 case "key":

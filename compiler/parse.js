@@ -703,9 +703,86 @@ function Parser(sc, resolver) {
         b.stmts = [];
         for (var stop = false; !stop;) {
             p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
-            if (p.pr.is(sc.END)) {
+            if (p.pr.in(sc.END, sc.ELSE, sc.ELSIF, sc.UNTIL)) {
                 //do nothing, handled in .block
                 stop = true;
+            } else if (p.pr.is(sc.IF)) {
+                var i = ast.stmt().cond();
+                var first = true;
+                for (var brk = false; !brk;) {
+                    if ((first && p.pr.is(sc.IF)) || p.pr.is(sc.ELSIF)) {
+                        first = false;
+                        p.pr.next();
+                        var e = new Expression();
+                        p.pr.expect(sc.THEN, sc.SEPARATOR, sc.DELIMITER);
+                        p.pr.next();
+                        var os = b.stmts;
+                        p.stmts(b);
+                        var ns = b.stmts;
+                        b.stmts = os;
+                        var br = i.branch();
+                        br.condition = e.value;
+                        br.sequence = ns;
+                        i.branches.push(br);
+                    } else if (p.pr.is(sc.ELSE)) {
+                        p.pr.next();
+                        var os = b.stmts;
+                        p.stmts(b);
+                        var ns = b.stmts;
+                        b.stmts = os;
+                        i.otherwise = ns;
+                        p.pr.expect(sc.END, sc.DELIMITER, sc.SEPARATOR);
+                        p.pr.next();
+                        brk = true;
+                    } else if (p.pr.is(sc.END)) {
+                        p.pr.next();
+                        brk = true;
+                    } else {
+                        p.sc.mark(`unexpected ${p.pr.sym.code}`);
+                    }
+                }
+                b.stmts.push(i);
+            } else if (p.pr.is(sc.WHILE)) {
+                var w = ast.stmt().cycle();
+                var first = true;
+                for (var brk = false; !brk;) {
+                    if ((first && p.pr.is(sc.WHILE)) || p.pr.is(sc.ELSIF)) {
+                        first = false;
+                        p.pr.next();
+                        var e = new Expression();
+                        p.pr.expect(sc.DO, sc.SEPARATOR, sc.DELIMITER);
+                        p.pr.next();
+                        var os = b.stmts;
+                        p.stmts(b);
+                        var ns = b.stmts;
+                        b.stmts = os;
+                        var br = w.branch();
+                        br.condition = e.value;
+                        br.sequence = ns;
+                        w.branches.push(br);
+                    } else if (p.pr.is(sc.END)) {
+                        p.pr.next();
+                        brk = true;
+                    } else {
+                        p.sc.mark(`unexpected ${p.pr.sym.code}`);
+                    }
+                }
+                b.stmts.push(w);
+            } else if (p.pr.is(sc.REPEAT)) {
+                var u = ast.stmt().invCycle();
+                p.pr.next();
+                var os = b.stmts;
+                p.stmts(b);
+                var ns = b.stmts;
+                b.stmts = os;
+                var br = u.branch();
+                br.sequence = ns;
+                p.pr.expect(sc.UNTIL, sc.SEPARATOR, sc.DELIMITER);
+                p.pr.next();
+                var e = new Expression();
+                br.condition = e.value;
+                u.value = br;
+                b.stmts.push(u);
             } else { //expr -> obj
                 var e = new Expression();
                 //console.log(e.value);

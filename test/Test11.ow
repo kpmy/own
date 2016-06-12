@@ -2,7 +2,47 @@ UNIT Test11
     CONST
         "Hi" -> hi
         TYPE: BASE: INTEGER;; -> WEIGHT
-    VAR w WEIGHT
+
+    VAR w WEIGHT; x INTEGER;
+
+    BLOCK Do
+    BEGIN
+        IF x > 0 THEN
+            0 -> x
+        ELSIF x = 0 THEN
+            -1 -> x
+        ELSE
+            10 -> x
+        END
+    END Do
+
+    BLOCK Do0
+        VAR i INTEGER;
+    BEGIN
+        WHILE i < 10 DO
+            INC[i]
+        ELSIF i < 20 DO
+            i + 2 -> i
+        END
+        i -> x
+    END Do0;
+
+    BLOCK Do1
+        VAR i INTEGER;
+    BEGIN
+        x -> i
+        REPEAT
+            INC[i]
+        UNTIL i>=30
+        i -> x
+    END Do1
+
 START
     10 -> w
+    10 -> x
+    Do
+    Do
+    Do
+    Do0
+    Do1
 END Test11

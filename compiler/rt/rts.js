@@ -733,7 +733,14 @@ function RTS(pwd) {
 
     rts.isValue = function (x) {
         return x instanceof Value;
-    }
+    };
+
+    rts.getNative = function (t, v) {
+        should.ok(v instanceof Value);
+        var x = v.getNativeValue();
+        should.ok(_.isEqual(typeof x, t));
+        return x;
+    };
 }
 
 module.exports = function (pwd) {

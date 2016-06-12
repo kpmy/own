@@ -47,7 +47,6 @@ function Module() {
         var ret = null;
         var c = this.objects[id];
         if (is(c).type("Constant")) {
-            console.dir(c, {depth: null});
             if (_.isEqual(c.expression.type.name, "TYPE")) {
                 ret = types.userType(id);
                 ret.value = c.value;
@@ -216,7 +215,49 @@ function Call() {
     this.selector = null;
 }
 
+function ConditionalBranch() {
+    this.condition = null;
+    this.sequence = [];
+}
+
+function Conditional() {
+    this.branches = [];
+    this.otherwise = [];
+
+    this.branch = function () {
+        return new ConditionalBranch();
+    }
+}
+
+function Cycle() {
+    this.branches = [];
+
+    this.branch = function () {
+        return new ConditionalBranch();
+    }
+}
+
+function InvCycle() {
+    this.value = null;
+
+    this.branch = function () {
+        return new ConditionalBranch();
+    }
+}
+
 function Stmt() {
+    this.cond = function () {
+        return new Conditional();
+    };
+
+    this.cycle = function () {
+        return new Cycle();
+    };
+
+    this.invCycle = function () {
+        return new InvCycle();
+    };
+
     this.assign = function () {
         return new Assign();
     };
@@ -277,7 +318,7 @@ let is = function (o) {
 module.exports.is = is;
 
 module.exports.isStatement = function (x) {
-    return (x instanceof Assign) || (x instanceof Call);
+    return (x instanceof Assign) || (x instanceof Call) || (x instanceof Conditional) || (x instanceof Cycle) || (x instanceof InvCycle);
 };
 
 module.exports.isExpression = function (x) {
