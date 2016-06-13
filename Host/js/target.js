@@ -3,7 +3,6 @@ const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
 const def = rerequire("./ir/def.js");
 const should = require("should");
-const Promise = require("bluebird");
 
 function Block() {
     this.imports = [];

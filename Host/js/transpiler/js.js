@@ -8,8 +8,10 @@ const Promise = require("bluebird");
 const ast = rerequire("../ir/ast.js");
 const tpl = rerequire("../ir/tpl.js").struct();
 
-function Builder(mod, stream) {
+function Builder(mod) {
     const b = this;
+    b.buffer = "";
+
     b.count = 0;
     b.nextInt = () => {
         b.count++;
@@ -17,13 +19,13 @@ function Builder(mod, stream) {
     };
 
     b.ln = function (x) {
-        if (x) stream.write(x);
+        if (x) b.buffer = b.buffer.concat(x);
 
-        stream.write("\n");
+        b.buffer = b.buffer.concat("\n");
     };
 
     b.write = function (x) {
-        stream.write(x);
+        b.buffer = b.buffer.concat(x);
     };
 
     b.val = function (v) {
@@ -522,27 +524,19 @@ function Builder(mod, stream) {
         b.ln(`};`);
 
         b.write(`module.exports = function(rts){return new Unit${mod.name} (rts)};`);
+        return b.buffer;
     };
 }
 
 module.exports = function (mod, resolve) {
     should.exist(mod);
     should.exist(resolve);
-    return function (stream) {
-        should.exist(stream);
-        var std = ast.imp();
-        std.name = "$std";
-        std.alias = "";
-        mod.imports.push(std);
-        var pl = [];
-        mod.imports.forEach(i => {
-            pl.push(resolve(i.name));
-        });
-        Promise.all(pl).then(d => {
-            mod.imports.forEach(i => {
-                i.def = d.find(ii => _.isEqual(ii.name, i.name));
-            });
-            new Builder(mod, stream).build();
-        });
-    }
+    var std = ast.imp();
+    std.name = "$std";
+    std.alias = "";
+    mod.imports.push(std);
+    mod.imports.forEach(i => {
+        i.def = resolve(i.name);
+    });
+    return new Builder(mod).build();
 };

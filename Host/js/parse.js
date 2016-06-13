@@ -1,7 +1,6 @@
 /* Created by kpmy on 12.05.2016 */
 const should = require("should");
 const _ = require("underscore");
-const Promise = require("bluebird");
 
 const ast = rerequire("./ir/ast.js");
 const tpl = rerequire("./ir/tpl.js");
@@ -176,14 +175,13 @@ function Parser(sc, resolver) {
             var exists = p.tgt.isBlock(obj.module, obj.name);
             if (!exists && _.isEqual(obj.module, p.tgt.mod.name) && _.isUndefined(noFuture)) {
                 var mark = sc.futureMark(`block ${obj.module} ${obj.name} not found`);
-                var f = function (res, rej) {
+                var f = function () {
                     var std = p.tgt.std();
                     if (p.tgt.isBlock(obj.module, obj.name)) {
-                        res();
+                        //ok
                     } else if (!_.isNull(std.thisBlock(obj.name))) {
                         obj.module = "$std";
                         obj.fix(obj);
-                        res();
                     } else {
                         mark();
                     }
@@ -532,9 +530,7 @@ function Parser(sc, resolver) {
     }
 
     p.resolve = function (name) {
-        var promise = resolver(name);
-        p.resolvers.push(promise);
-        return promise;
+        return resolver(name);
     };
 
     p.imp = function (b) {
@@ -560,7 +556,8 @@ function Parser(sc, resolver) {
                         }
                         imp.name = name;
                         imp.alias = alias;
-                        if (!cache.hasOwnProperty(name)) {
+                        imp.def = p.resolve(name);
+                        /*if (!cache.hasOwnProperty(name)) {
                             var noCycleCheck = function (def) {
                                 cache[name].def = def;
                                 const noCycle = function (i) {
@@ -576,7 +573,7 @@ function Parser(sc, resolver) {
                             };
                             p.resolve(name).then(noCycleCheck);
                             cache[name] = imp;
-                        }
+                         }*/ //TODO проверить циклический импорт
                         b.imports.push(imp);
                     } else {
                         p.sc.mark("import already exists ", alias);
@@ -1071,26 +1068,18 @@ function Parser(sc, resolver) {
         p.pr.next();
         p.imp(block);
         p.tgt.mod.imports = block.imports;
-        return new Promise(function (res, rej) {
-            Promise.all(p.resolvers).then(function () {
-                p.block(block, sc.UNIT);
-                p.tgt.popBlock();
-                p.pr.expect(sc.END, sc.SEPARATOR, sc.DELIMITER);
-                p.pr.next();
-                p.pr.expect(sc.IDENT, sc.DELIMITER);
-                if (!_.isEqual(mod, p.pr.identifier().id))
-                    p.sc.mark("wrong module name");
-                p.pr.next();
-            }).then(function () {
-                var pr = [];
-                p.tgt._resolvers.forEach((f) => {
-                    pr.push(new Promise(f));
-                });
-                Promise.all(pr).then(function () {
-                    res(p.tgt.result());
-                });
-            });//.catch(error => {console.trace(error);});
-        });
+
+        p.block(block, sc.UNIT);
+        p.tgt.popBlock();
+        p.pr.expect(sc.END, sc.SEPARATOR, sc.DELIMITER);
+        p.pr.next();
+        p.pr.expect(sc.IDENT, sc.DELIMITER);
+        if (!_.isEqual(mod, p.pr.identifier().id))
+            p.sc.mark("wrong module name");
+
+        p.tgt._resolvers.forEach(r => r());
+        p.pr.next();
+        return p.tgt.result()
     };
 
     p.pr.next();

@@ -1,5 +1,5 @@
 /* Created by kpmy on 10.06.2016 */
-const should = require("should/as-function");
+const should = require("should");
 const _ = require('underscore');
 
 function Qualident(tpl, cls, id) {

@@ -1,8 +1,8 @@
 /* Created by kpmy on 19.05.2016 */
 const should = require("should");
-const types = rerequire("../ir/types.js")();
+const types = rerequire("./ir/types.js")();
 const _ = require("underscore");
-const tpl = rerequire("../ir/tpl.js").struct();
+const tpl = rerequire("./ir/tpl.js").struct();
 
 function Type(tn, id, value) {
     const t = this;

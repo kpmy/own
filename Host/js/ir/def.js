@@ -2,9 +2,8 @@
 const should = require("should");
 const _ = require('underscore');
 const ast = rerequire("./ast.js");
-const jsonStream = require('JSONStream');
 
-function Writer(mod, stream) {
+function Writer(mod) {
 
   this.build = function() {
       var def = ast.def();
@@ -42,24 +41,15 @@ function Writer(mod, stream) {
 
               def.objects[o.name] = od;
           });
-      var js = jsonStream.stringifyObject();
-      js.pipe(stream);
-      js.write(["definition", def]);
-      js.end();
+      return JSON.stringify({"definition": def});
   }
 }
 
-function Reader(ret, stream) {
+function Reader(source) {
     this.read = function () {
-        const es = require('event-stream');
-        var jp = jsonStream.parse('$*');
-        stream.pipe(jp).pipe(es.mapSync(function (def) {
-            should.ok(_.isEqual("definition", def.key));
-            var res = ast.def();
-            res = Object.assign(res, def.value);
-            //console.log(res);
-            ret(res);
-        }));
+        var def = JSON.parse(source);
+        var res = ast.def();
+        return Object.assign(res, def);
     }
 }
 
@@ -128,18 +118,12 @@ module.exports.std = function () {
     return res;
 };
 
-module.exports.writer = function (mod) {
+module.exports.write = function (mod) {
     should.exist(mod);
-    return function (stream) {
-        should.exist(stream);
-        new Writer(mod, stream).build();
-    }
+    return new Writer(mod).build();
 };
 
-module.exports.reader = function (ret) {
-    should.exist(ret);
-    return function (stream) {
-        should.exist(stream);
-        new Reader(ret, stream).read();
-    };
+module.exports.read = function (source) {
+    should.exist(source);
+    return new Reader(source).read();
 };

@@ -1,5 +1,5 @@
 /* Created by kpmy on 10.05.2016 */
-const should = require("should/as-function");
+const should = require("should");
 const _ = require('underscore');
 const charfunk = require("charfunk");
 
@@ -33,7 +33,7 @@ function isNum(ch) {
     }
 }
 
-function Scanner(stream) {
+function Scanner(source) {
     const s = this;
 
     s.EOF = new Sym("EOF");
@@ -104,7 +104,6 @@ function Scanner(stream) {
         "UNTIL": s.UNTIL = thisSym("UNTIL")
     };
 
-    this["stream"] = stream;
     this["eof"] = false;
     this.strict = false;
     this["pos"] = 0;
@@ -149,7 +148,7 @@ function Scanner(stream) {
     };
 
     this.next = function () {
-        var c = this.stream.read(1);
+        var c = source.charAt(this.pos);
         if (c) {
             this.pos++;
             this.ch = c;
@@ -453,6 +452,6 @@ function Scanner(stream) {
     this.next(); //important initial read
 }
 
-module.exports = function (stream) {
-    return new Scanner(stream)
+module.exports = function (source) {
+    return new Scanner(source)
 };

@@ -8,7 +8,7 @@ const ast = rerequire("./ast.js");
 const tpl = rerequire("./tpl.js").struct();
 const types = rerequire("./types.js")();
 
-function Writer(mod, stream) {
+function Writer(mod) {
     const w = this;
 
     w.tpl = function (t, root) {
@@ -271,16 +271,10 @@ function Writer(mod, stream) {
         }
     };
 
-    w.build = function() {
-        stream.write('<?xml version="1.0" encoding="UTF-8"?>'); //header :(
+    w.build = function (stream) {
         var unit = xml.element({_attr: {name: mod.name, "xmlns:ot": "urn:kpmy:ot"}});
-        var xs = xml({"unit": unit}, {stream: true});
-        xs.on("data", function (chunk) {
-            stream.write(chunk);
-        });
-        xs.once("end", function () {
-            stream.end();
-        });
+        var xs = xml({"unit": unit}, {stream: true, declaration: true});
+        xs.pipe(stream);
         mod.imports.forEach(function (i) {
             const attrs = _.isEmpty(i.alias) ? {name: i.name} : {name: i.name, alias: i.alias};
             unit.push({"import": {_attr: attrs}});
@@ -317,9 +311,9 @@ function Writer(mod, stream) {
     }
 }
 
-function Reader(ret, stream) {
+function Reader(source) {
     this.read = function () {
-        var xs = sax.createStream(true);
+        var xs = sax.parser(true);
         var mod = null;
         var stack = [];
         var stackTypes = [];
@@ -707,7 +701,7 @@ function Reader(ret, stream) {
                 case "unit":
                     var x = stack.pop();
                     if (_.isEmpty(stack)){
-                        ret(mod);
+                        //end
                     } else {
                         throw new Error("unexpected unit close tag");
                     }
@@ -755,23 +749,19 @@ function Reader(ret, stream) {
                     throw new Error("unknown close tag "+name);
             }
         };
-        
-        stream.pipe(xs);
+
+        xs.write(source).close();
+        return mod;
     }
 }
 
-module.exports.writer = function (mod) {
+module.exports.writer = function (mod, stream) {
     should.exist(mod);
-    return function (stream) {
-        should.exist(stream);
-        new Writer(mod, stream).build();
-    }
+    should.exist(stream);
+    new Writer(mod).build(stream);
 };
 
-module.exports.reader = function (ret) {
-    should.exist(ret);
-    return function (stream) {
-        should.exist(stream);
-        new Reader(ret, stream).read();
-    };
+module.exports.read = function (source) {
+    should.exist(source);
+    return new Reader(source).read();
 };

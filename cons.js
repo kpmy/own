@@ -2,11 +2,9 @@
  * Created by kpmy on 11.06.2016.
  */
 global.rerequire = require("require-new");
-const Promise = require("bluebird");
+let own = require("./Host")(__dirname + "/Own");
 
-console.log("own");
-let name = "test/Test11.ow";
-
-new Promise((r, e) => {
-    rerequire("./compiler/owl.js")(name);
-}).then(process.exit);
+own.compile("Test11");
+own.rts.load("Test11");
+own.rts.dump();
+//process.exit();

@@ -1,0 +1,5 @@
+{
+  "name": "own-host",
+  "main": "./js/own.js",
+  "private": true
+}
