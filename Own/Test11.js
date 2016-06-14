@@ -75,11 +75,11 @@ function UnitTest11(rts) {
                 })));
             } else {
                 cond1 = false;
-            }
+}
         }
         mod.$x.value((rts.copyOf($i.value())));
         console.log("leave Test11.Do0");
-    };
+};
 
     mod.$Do1 = function () {
         console.log("enter Test11.Do1");

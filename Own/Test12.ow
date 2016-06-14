@@ -1,0 +1,14 @@
+UNIT Test12
+
+    VAR x INTEGER; t TYPE
+BEGIN
+    IF x IS INTEGER THEN
+        1 -> x
+    END
+
+    \TYPEOF x -> t
+
+    IF x IS t THEN
+        2 -> x
+    END
+END Test12

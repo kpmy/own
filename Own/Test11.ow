@@ -1,7 +1,9 @@
 UNIT Test11
     CONST
         "Hi" -> hi
-        TYPE: BASE: INTEGER;; -> WEIGHT
+        TYPE:
+            BASE: INTEGER;
+        ; -> WEIGHT
 
     VAR w WEIGHT; x INTEGER;
 
