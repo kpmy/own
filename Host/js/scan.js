@@ -1,7 +1,7 @@
 /* Created by kpmy on 10.05.2016 */
 const should = require("should");
 const _ = require('underscore');
-const charfunk = require("charfunk");
+const charfunk = require("./vendor/charFunk-1.1.2.min.js");
 
 function Sym(type) {
     this.type = "SYM";

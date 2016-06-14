@@ -46,13 +46,6 @@ function Own(root) {
             autoClose: true,
             "fd": ad
         }));
-        /*
-         var ad = fs.openSync(root + "/" + name + ".ox", "r");
-         var asts = fs.readFileSync(ad, "utf8");
-         console.log(asts);
-         var mod = rerequire("./ir/xml.js").read(asts);
-         fs.close(ad);
-         */
 
         var js = rerequire("./transpiler/js.js")(mod, resolveDef);
         var jd = fs.openSync(root + "/" + name + ".js", "w");

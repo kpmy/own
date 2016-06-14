@@ -3,7 +3,6 @@
     */
 const should = require("should");
 const _ = require('underscore');
-const Promise = require("bluebird");
 
 const ast = rerequire("../ir/ast.js");
 const tpl = rerequire("../ir/tpl.js").struct();
@@ -164,7 +163,6 @@ function Builder(mod) {
         params.forEach((p, i, $) => {
             if(i > 0) b.ln(",");
             var valueParam = true;
-            console.log(p);
             if(i < fp.length && _.isEqual(fp[i].param.type, "reference")){
                 if (typeof p == "string") { //temporary
                     b.write(p);

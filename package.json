@@ -6,7 +6,6 @@
     "start": "node cons.js"
   },
   "dependencies": {
-    "charfunk": "^1.1.2",
     "require-new": "^1.1.0",
     "sax": "^1.2.1",
     "should": "^8.3.1",

@@ -4,7 +4,8 @@
 global.rerequire = require("require-new");
 let own = require("./Host")(__dirname + "/Own");
 
-own.compile("Test11");
-own.rts.load("Test11");
+let name = "Test11";
+own.compile(name);
+own.rts.load(name);
 own.rts.dump();
 //process.exit();

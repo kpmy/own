@@ -1,7 +1,7 @@
 /* Created by kpmy on 13.05.2016 */
 const should = require("should");
 const xml = require("xml");
-const sax = require("sax");
+//const sax = require("sax");
 const _ = require('underscore');
 
 const ast = rerequire("./ast.js");
@@ -310,7 +310,7 @@ function Writer(mod) {
         unit.close();
     }
 }
-
+/*
 function Reader(source) {
     this.read = function () {
         var xs = sax.parser(true);
@@ -754,14 +754,26 @@ function Reader(source) {
         return mod;
     }
 }
+ */
 
 module.exports.writer = function (mod, stream) {
     should.exist(mod);
     should.exist(stream);
     new Writer(mod).build(stream);
 };
-
+/*
 module.exports.read = function (source) {
     should.exist(source);
     return new Reader(source).read();
 };
+ */
+
+/*
+ var ad = fs.openSync(root + "/" + name + ".ox", "r");
+ var asts = fs.readFileSync(ad, "utf8");
+ console.log(asts);
+ var mod = rerequire("./ir/xml.js").read(asts);
+ fs.close(ad);
+ */
+
+//запись в xml продолжает работать для сторонних интерпретаторов, а вот чтение пока выключаем и больше не поддерживаем, отнимает силы, а читать мы уже научились

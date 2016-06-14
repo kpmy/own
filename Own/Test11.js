@@ -93,10 +93,10 @@ function UnitTest11(rts) {
             }, ">=", function () {
                 return (new rts.Value("INTEGER", 30))
             })))
-        }
+}
         mod.$x.value((rts.copyOf($i.value())));
         console.log("leave Test11.Do1");
-    };
+};
     mod.start = function () {
         console.log('dynamic load Test11');
         mod.$w.value((new rts.Value("INTEGER", 10)));
