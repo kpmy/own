@@ -4,8 +4,17 @@
 global.rerequire = require("require-new");
 let own = require("./Host")(__dirname + "/Own");
 
-let name = "Test11";
+let name = "Test12";
 own.compile(name);
 own.rts.load(name);
 own.rts.dump();
+
+function build() {
+    Array.from(arguments).forEach(x => {
+        console.log(x);
+        own.compile(x)
+    });
+}
+
+//build("Simple", "Log", "Test0", "Test1", "Test2", "Test3", "Test4", "Test5", "Test6", "Test7", "Test8", "Test9", "Test10", "Test11");
 //process.exit();

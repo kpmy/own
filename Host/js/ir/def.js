@@ -49,7 +49,7 @@ function Reader(source) {
     this.read = function () {
         var def = JSON.parse(source);
         var res = ast.def();
-        return Object.assign(res, def);
+        return Object.assign(res, def.definition);
     }
 }
 

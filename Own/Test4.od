@@ -1,0 +1,1 @@
+{"definition":{"name":"Test4","imports":[],"objects":{"x":{"name":"x","type":{"name":"INTEGER"},"modifier":"rw"},"y":{"name":"y","type":{"name":"INTEGER"},"modifier":"r"}},"blocks":[{"name":"Do","infix":false,"objects":{"i":{"name":"i","type":{"name":"INTEGER"},"param":{"type":"value","number":0}}}}]}}

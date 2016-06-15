@@ -575,6 +575,7 @@ function Parser(sc, resolver) {
                             cache[name] = imp;
                          }*/ //TODO проверить циклический импорт
                         b.imports.push(imp);
+                        cache[name] = imp;
                     } else {
                         p.sc.mark("import already exists ", alias);
                     }

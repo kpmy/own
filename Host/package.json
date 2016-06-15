@@ -1,5 +1,9 @@
 {
   "name": "own-host",
   "main": "./js/own.js",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "should": "^8.3.1",
+    "underscore": "^1.8.3"
+  }
 }

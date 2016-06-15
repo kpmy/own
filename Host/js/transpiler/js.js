@@ -325,13 +325,11 @@ function Builder(mod) {
                 e.expression.params = tp;
                 should.exist(tmpType);
                 b.write(`var ${tmp} = new rts.Obj(new rts.Type("${tmpType}"));\n`);
-                console.dir(e, {depth: null});
                 b.expr(e.expression);
                 b.ln(";");
                 b.write(`return ${tmp}.value();`);
             } else {
                 var inside = e.params.slice();
-                console.log(inside);
                 e.selector.inside = [];
                 var tmp = "tmp" + b.nextInt();
                 var tmpType = "ANY";

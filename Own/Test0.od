@@ -1,0 +1,1 @@
+{"definition":{"name":"Test0","imports":["Log"],"objects":{"i":{"name":"i","type":{"name":"INTEGER"},"modifier":"rw"},"j":{"name":"j","type":{"name":"INTEGER"},"modifier":"rw"}},"blocks":[{"name":"Do","infix":false,"objects":{}},{"name":"Do0","infix":false,"objects":{"i":{"name":"i","type":{"name":"INTEGER"},"param":{"type":"reference","number":0}}}}]}}

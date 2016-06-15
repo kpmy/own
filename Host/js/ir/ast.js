@@ -82,7 +82,9 @@ function Import() {
 
     this.thisBlock = function (name) {
         var ret = null;
-        ret = this.def.blocks.find(x => _.isEqual(x.name, name));
+        ret = this.def.blocks.find(x => {
+            return _.isEqual(x.name, name)
+        });
         return _.isUndefined(ret) ? null : ret;
     };
 

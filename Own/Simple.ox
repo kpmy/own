@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="UTF-8"?><unit name="Simple" xmlns:ot="urn:kpmy:ot"><import name="Console"/><start><call><expression><call-expression module="Console" name="Print"><parameter><constant-expression type="INTEGER">0</constant-expression></parameter></call-expression></expression></call></start></unit>
