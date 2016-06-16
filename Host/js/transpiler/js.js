@@ -235,7 +235,11 @@ function Builder(mod) {
                 }
             } else if (_.isEqual(e.type.name, "TYPE")) {
                 b.write(`new rts.Value("${e.type.name}", `);
-                b.tpl(e.value);
+                if (ast.is(e.value).type("Type")) {
+                    b.write(`types.find("${e.value.name}")`);
+                } else {
+                    b.tpl(e.value);
+                }
                 b.write(`)`);
             } else {
                 var v = e.value;
@@ -422,6 +426,45 @@ function Builder(mod) {
             b.write(`${cond} = rts.getNative("boolean", `);
             b.expr(s.value.condition);
             b.write(`)}`);
+        } else if (ast.is(s).type("Choose")) {
+            var cond = null;
+            if (s.typetest || !_.isNull(s.expression)) {
+                cond = "cond" + b.nextInt();
+                b.write(`var ${cond} = new rts.Value("ANY", `);
+                b.expr(s.expression);
+                b.ln(")");
+            }
+            s.branches.forEach((br, i, $) => {
+                if (i > 0) b.write(" else ");
+                b.write("if(");
+                br.condition.forEach((c, i, $) => {
+                    if (i > 0) b.write(" || ");
+                    if (s.typetest) {
+                        b.write(`${cond}.isTypeEqual(`);
+                    } else if (!_.isNull(s.expression)) {
+                        b.write(`${cond}.isValueEqual(`);
+                    } else {
+                        b.write(`rts.getNative("boolean", `);
+                    }
+                    b.expr(c);
+                    b.write(")");
+                });
+                b.write("){");
+                br.sequence.forEach(s => {
+                    b.stmt(s);
+                    b.ln(";");
+                });
+                b.write(`}`);
+            });
+
+            if (!_.isEmpty(s.otherwise)) {
+                b.ln(`else {`);
+                s.otherwise.forEach(s => {
+                    b.stmt(s);
+                    b.ln(`;`);
+                });
+                b.write(`}`)
+            }
         } else {
             throw new Error("unknown statement " + s.constructor.name);
         }

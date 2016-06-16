@@ -106,7 +106,11 @@ function Writer(mod) {
                     var attrs = {"type": e.type.name};
                     var type = xml.element({_attr: attrs});
                     root.push({"constant-expression": type});
-                    w.tpl(e.value, type);
+                    if (ast.is(e.value).type("Type")) { //builtin type
+                        root.push(e.value.name);
+                    } else {
+                        w.tpl(e.value, type);
+                    }
                     type.close();
                     break;
                 case "MAP":
@@ -183,13 +187,17 @@ function Writer(mod) {
     };
 
     w.branch = function (b, root) {
-        var br = xml.element();
-        root.push({"branch": br});
-        w.expr(b.condition, "condition", br);
+        var el = xml.element();
+        root.push({"branch": el});
+        if (b.multiple) {
+            b.condition.forEach(x => w.expr(x, "condition", el));
+        } else {
+            w.expr(b.condition, "condition", el);
+        }
         b.sequence.forEach(s => {
-            w.stmt(s, br);
+            w.stmt(s, el);
         });
-        br.close();
+        el.close();
     };
 
     w.stmt = function (s, root) {
@@ -237,6 +245,16 @@ function Writer(mod) {
             root.push({"repeat": cond});
             w.branch(s.value, cond);
             cond.close();
+        } else if (ast.is(s).type("Choose")) {
+            var attrs = {};
+            attrs["type"] = s.typetest ? "typetest" : "exprtest";
+            var ch = xml.element({_attr: attrs});
+            root.push({"choose": ch});
+            if (!_.isNull(s.expression)) {
+                w.expr(s.expression, "expression", ch);
+            }
+            s.branches.forEach(c => w.branch(c, ch));
+            ch.close();
         } else {
             throw new Error("unexpected statement "+s.constructor.name);
         }

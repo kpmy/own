@@ -101,7 +101,12 @@ function Scanner(source) {
         "WHILE": s.WHILE = thisSym("WHILE"),
         "DO": s.DO = thisSym("DO"),
         "REPEAT": s.REPEAT = thisSym("REPEAT"),
-        "UNTIL": s.UNTIL = thisSym("UNTIL")
+        "UNTIL": s.UNTIL = thisSym("UNTIL"),
+        "IS": s.IS = thisSym("IS"),
+        "CHOOSE": s.CHOOSE = thisSym("CHOOSE"),
+        "OF": s.OF = thisSym("OF"),
+        "AS": s.AS = thisSym("AS"),
+        "OR": s.OR = thisSym("OR")
     };
 
     this["eof"] = false;

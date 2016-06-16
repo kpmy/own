@@ -35,5 +35,4 @@ node_modules
 *.ipr
 own.iws
 dist
-*.ox
-*.od
+

@@ -1,7 +1,8 @@
 UNIT Test12
 
-    VAR x INTEGER; t TYPE
-BEGIN
+    VAR x, y INTEGER; t TYPE
+
+START
     IF x IS INTEGER THEN
         1 -> x
     END
@@ -11,4 +12,21 @@ BEGIN
     IF x IS t THEN
         2 -> x
     END
+
+    CHOOSE x
+    OF 1: 3 -> y
+    OR 2: 2 -> y
+    OR 3: 1 -> y
+    ELSE 0 -> y END;
+
+    CHOOSE x
+    AS INTEGER: 2 -> y
+    OR BOOLEAN: 3 -> y
+    ELSE 0 -> y END;
+
+    CHOOSE
+    OF x = 1 : 2 -> y
+    OR x = 2 : 3 -> y
+    ELSE 0 -> y END;
+
 END Test12

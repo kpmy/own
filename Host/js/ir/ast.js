@@ -220,6 +220,7 @@ function Call() {
 function ConditionalBranch() {
     this.condition = null;
     this.sequence = [];
+    this.multiple = false;
 }
 
 function Conditional() {
@@ -247,6 +248,17 @@ function InvCycle() {
     }
 }
 
+function Choose() {
+    this.expression = null;
+    this.branches = [];
+    this.otherwise = [];
+    this.typetest = false;
+
+    this.branch = function () {
+        return new ConditionalBranch();
+    }
+}
+
 function Stmt() {
     this.cond = function () {
         return new Conditional();
@@ -266,6 +278,10 @@ function Stmt() {
 
     this.call = function () {
         return new Call();
+    };
+
+    this.choose = function () {
+        return new Choose();
     }
 }
 
@@ -320,7 +336,7 @@ let is = function (o) {
 module.exports.is = is;
 
 module.exports.isStatement = function (x) {
-    return (x instanceof Assign) || (x instanceof Call) || (x instanceof Conditional) || (x instanceof Cycle) || (x instanceof InvCycle);
+    return (x instanceof Assign) || (x instanceof Call) || (x instanceof Conditional) || (x instanceof Cycle) || (x instanceof InvCycle) || (x instanceof Choose);
 };
 
 module.exports.isExpression = function (x) {

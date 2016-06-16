@@ -266,12 +266,14 @@ function Parser(sc, resolver) {
                 var c = ast.expr().constant(types.TYPE, t.root);
                 e.push(c);
             } else if (p.pr.is(sc.IDENT)) {
-                var obj = p.obj(p.tgt.block());
-                if (ast.is(obj).type("Selector")) {
-                    e.push(ast.expr().select(obj));
-                } else if (ast.is(obj).type("CallExpr")) {
-                    existsBlock(obj);
-                    e.push(obj)
+                var x = p.obj(p.tgt.block());
+                if (ast.is(x).type("Selector")) {
+                    e.push(ast.expr().select(x));
+                } else if (ast.is(x).type("ConstExpr")) {
+                    e.push(x)
+                } else if (ast.is(x).type("CallExpr")) {
+                    existsBlock(x);
+                    e.push(x)
                 } else {
                     p.sc.mark(`invalid object or call`);
                 }
@@ -436,7 +438,7 @@ function Parser(sc, resolver) {
             p.pr.pass(sc.DELIMITER);
             e.quantum();
             p.pr.pass(sc.DELIMITER);
-            if (p.pr.in(sc.EQL, sc.NEQ, sc.GEQ, sc.LEQ, sc.LSS, sc.GTR)) {
+            if (p.pr.in(sc.EQL, sc.NEQ, sc.GEQ, sc.LEQ, sc.LSS, sc.GTR, sc.IS)) {
                 var op = p.pr.sym.code;
                 p.pr.next();
                 p.pr.pass(sc.DELIMITER);
@@ -682,6 +684,9 @@ function Parser(sc, resolver) {
                 }
             }
             return sel;
+        } else if (!_.isNull(types.find(sel.name))) {
+            var te = ast.expr().constant(types.TYPE, types.find(sel.name));
+            return te;
         } else if (foreign && !p.tgt.isBlock(sel.module, sel.name)) {
             p.sc.mark(`identifier not found ${sel.module} ${sel.name}`);
         } else {
@@ -695,13 +700,14 @@ function Parser(sc, resolver) {
             call.pure = pure;
             return call;
         }
+        throw new Error("unhandled here");
     };
 
     p.stmts = function (b) {
         b.stmts = [];
         for (var stop = false; !stop;) {
             p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
-            if (p.pr.in(sc.END, sc.ELSE, sc.ELSIF, sc.UNTIL)) {
+            if (p.pr.in(sc.END, sc.ELSE, sc.ELSIF, sc.UNTIL, sc.OR)) {
                 //do nothing, handled in .block
                 stop = true;
             } else if (p.pr.is(sc.IF)) {
@@ -781,6 +787,83 @@ function Parser(sc, resolver) {
                 br.condition = e.value;
                 u.value = br;
                 b.stmts.push(u);
+            } else if (p.pr.is(sc.CHOOSE)) {
+                const free = 0;
+                const exprtest = 1;
+                const typetest = 2;
+                p.pr.next();
+                var c = ast.stmt().choose();
+                var typ = free;
+                if (!p.pr.wait(sc.OF, sc.DELIMITER, sc.SEPARATOR)) {
+                    c.expression = new Expression().value;
+                    if (p.pr.wait(sc.OF, sc.DELIMITER, sc.SEPARATOR)) {
+                        typ = exprtest
+                    } else if (p.pr.is(sc.AS)) {
+                        typ = typetest
+                    } else {
+                        p.sc.mark("expected OF or AS");
+                    }
+                }
+                var first = true;
+                for (var brk = false; !brk;) {
+                    if (p.pr.in(sc.OF, sc.AS, sc.OR)) {
+                        if (p.pr.in(sc.OF, sc.AS) && !first) {
+                            p.sc.mark("expected OR");
+                        }
+                        if (p.pr.is(sc.AS) && !typetest) {
+                            p.sc.mark("type test only for expressions");
+                        }
+                        first = false;
+                        p.pr.next();
+                        p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
+                        var bunch = [];
+                        if (typ == free || typ == exprtest) {
+                            for (; ;) {
+                                var ex = new Expression();
+                                bunch.push(ex.value);
+                                if (p.pr.wait(sc.COLON, sc.DELIMITER)) {
+                                    p.pr.next();
+                                    break;
+                                } else if (!p.pr.is(sc.COMMA)) {
+                                    p.sc.mark("comma expected");
+                                } else {
+                                    p.pr.next();
+                                }
+                            }
+                        } else if (typ == typetest) {
+                            c.typetest = true;
+                            var ex = new Expression();
+                            bunch.push(ex.value);
+                            p.pr.expect(sc.COLON, sc.DELIMITER);
+                            p.pr.next();
+                        }
+                        var os = b.stmts;
+                        p.stmts(b);
+                        var ns = b.stmts;
+                        b.stmts = os;
+                        var br = c.branch();
+                        br.sequence = ns;
+                        br.condition = bunch;
+                        br.multiple = true;
+                        c.branches.push(br);
+                        p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
+                    } else if (p.pr.is(sc.ELSE)) {
+                        p.pr.next();
+                        var os = b.stmts;
+                        p.stmts(b);
+                        var ns = b.stmts;
+                        b.stmts = os;
+                        c.otherwise = ns;
+                        p.pr.expect(sc.END, sc.DELIMITER, sc.SEPARATOR);
+                        p.pr.next();
+                        brk = true;
+                    } else if (p.pr.is(sc.END)) {
+                        brk = true;
+                    } else {
+                        p.pr.mark("END expected");
+                    }
+                }
+                b.stmts.push(c);
             } else { //expr -> obj
                 var e = new Expression();
                 //console.log(e.value);

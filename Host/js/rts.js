@@ -433,6 +433,11 @@ Value.prototype.isValueEqual = function(that){
     return ret;
 };
 
+Value.prototype.isTypeEqual = function (that) {
+    should.ok(that instanceof Value);
+    return true;
+};
+
 function ValueMath() {
     const m = this;
     m.op = {
@@ -610,9 +615,11 @@ function ValueMath() {
             should.ok(ret instanceof Value);
             return ret
         }
-        var body = `throw new Error("not implemented")`;
+
+        var mfn = null;
+
         if (!_.isUndefined(m.op[op])) {
-            body = (`
+            var body = (`
                 const op = "${op}";
                 var left = l();
                 
@@ -639,12 +646,23 @@ function ValueMath() {
                 }) : rt.fn;
                
                 return this.value(rt.type, ret(left.getNativeValue(), right.getNativeValue()));`
-                );
+            );
+            var fn = new Function(`l`, `r`, body);
+            mfn = fn.bind(m);
+        } else if (_.isEqual(op, "IS")) {
+            mfn = function (left, right) {
+                var test = left();
+                var typ = right();
+                if (_.isEqual(typ.type.name, "TYPE")) {
+                    return m.value("BOOLEAN", _.isEqual(test.type.name, typ.value.name));
+                } else {
+                    throw new Error("strange type of IS")
+                }
+            };
         } else {
             throw new Error(`not implemented for ${op}`);
         }
-        var fn = new Function(`l`, `r`, body);
-        var mfn = fn.bind(m);
+        should.exist(mfn);
         return mfn(left, right);
     }
 }
