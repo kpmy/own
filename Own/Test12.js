@@ -16,7 +16,7 @@ function UnitTest12(rts) {
                 return (new rts.Value("TYPE", types.find("INTEGER")))
             })))) {
             mod.$x.value((new rts.Value("INTEGER", 1)));
-        }
+}
         mod.$t.value((function () {
             var tmp1 = new rts.Obj(new rts.Type("TYPE"));
             (mod.Import$std.$TYPEOF(tmp1,
@@ -77,7 +77,7 @@ function UnitTest12(rts) {
         } else {
             mod.$t.value((new rts.Value("ANY", global.NONE)));
         }
-    };
+};
 }
 module.exports = function (rts) {
     return new UnitTest12(rts)

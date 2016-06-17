@@ -37,7 +37,7 @@ function UnitTest13(rts) {
                 return (new rts.Value("INTEGER", 0))
             })))) throw new Error("postcondition 0 violated");
         console.log("leave Test13.Do0");
-    };
+};
     mod.start = function () {
         console.log('dynamic load Test13');
         mod.$z.value((new rts.Value("INTEGER", 1)));

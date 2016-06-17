@@ -174,7 +174,7 @@ function Writer(mod) {
             });
             inf.close();
         } else if (ast.is(e).type("WildcardExpr")) {
-            root.push(xml({"wildcard-expression": {}}));
+            root.push({"wildcard-expression": {}});
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
         }
