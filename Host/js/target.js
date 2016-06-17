@@ -12,6 +12,8 @@ function Block() {
     this.blocks = [];
     this.exported = false;
     this.infix = false;
+    this.pre = [];
+    this.post = [];
 
     this.hasImport = function (alias) {
         if (_.isEmpty(alias))
@@ -144,6 +146,7 @@ function Target(name, sc) {
                 case "MAP":
                 case "SET":
                 case "USER":
+                case "POINTER":
                     ret = true; //TODO добавить проверку
                     break;
                 default: throw new Error(`unsupported type check ${o.type.name}`);
@@ -184,6 +187,7 @@ function Target(name, sc) {
                 case "BLOCK":
                 case "ATOM":
                 case "TYPE":
+                case "POINTER":
                     ret = true; //TODO fix type check
                     break;
                 default: throw new Error(`unsupported type check ${o.type.name}`)

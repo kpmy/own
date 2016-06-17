@@ -59,6 +59,9 @@ function defaultValue(t) {
             ret = null;
             id = t.id;
             break; //TODO fix this default value
+        case "POINTER":
+            ret = null;
+            break;
         default:
             throw new Error(`unknown default value for type ${t.name}`);
     }
@@ -138,9 +141,9 @@ function Obj(t, cv) {
             o.value = function (x) {
                 if (!(_.isNull(x) || _.isUndefined(x))) {
                     should.ok(x instanceof Value);
-                    if (_.isEqual(o.type.base.name, "ATOM")){
+                    if (_.isEqual(x.type.name, "ATOM")) {
                         o.val.set(new Value("ATOM", x.value))
-                    } else if (_.isEqual(o.type.base.name, "ANY") && _.isNull(x.value)) {
+                    } else if (_.isEqual(x.type.name, "ANY") && _.isNull(x.value)) {
                         o.val.set(new Value("ATOM", null));
                     } else {
                         throw new Error(`types don't match ${o.type.base.name} ${x.type.name}`)
@@ -157,11 +160,7 @@ function Obj(t, cv) {
             o.value = function (x) {
                 if (!(_.isNull(x) || _.isUndefined(x))) {
                     should.ok(x instanceof Value);
-                    if (_.isEqual(o.type.base.name, "ANY")) {
-                        o.val.set(new Value("ANY", x));
-                    } else {
-                        throw new Error(`types don't match ${o.type.base.name} ${x.type.name}`)
-                    }
+                    o.val.set(new Value("ANY", x));
                 }
                 return o.val.get();
             };
@@ -179,6 +178,23 @@ function Obj(t, cv) {
             };
             o.call = notImpl;
             o.select = notImpl;
+            break;
+        case "POINTER":
+            o.value = function (x) {
+                if (!(_.isNull(x) || _.isUndefined(x))) {
+                    should.ok(x instanceof Value);
+                    if (_.isEqual(x.type.name, "POINTER")) {
+                        o.val.set(new Value("POINTER", x.value));
+                    } else {
+                        should.ok(o.val.get().value.adr > 0);
+                        o.val.get().value.obj.value(x);
+                    }
+                }
+                return o.val.get();
+            };
+            o.call = notImpl;
+            o.select = notImpl;
+            o.deref = notImpl;
             break;
         case "STRING":
             o.value = function (x) {
@@ -397,6 +413,7 @@ Value.prototype.getNativeValue = function(){
         case "BLOCK":
         case "BOOLEAN":
         case "LIST":
+        case "POINTER":
             ret = v.value;
             break;
         default:
@@ -545,6 +562,9 @@ function ValueMath() {
         },
         "CHAR": {
             "CHAR": {type: "BOOLEAN", fn: (l, r) => !_.isEqual(l, r)}
+        },
+        "POINTER": {
+            "POINTER": {type: "BOOLEAN", fn: (l, r) => !_.isEqual(l.adr, r.adr)}
         }
     };
 
@@ -670,6 +690,12 @@ function ValueMath() {
 function Std() {
     const std = this;
 
+    var next = 0;
+    std.nextInt = function () {
+        next++;
+        return next;
+    };
+
     std.$INC = function (x) {
         should.ok(x instanceof Obj);
         should.ok(x.type.base.name == "INTEGER");
@@ -706,6 +732,24 @@ function Std() {
         } else {
             res.value(new Value("TYPE", o.type));
         }
+    };
+
+    std.$ASSERT = function (cond, code) {
+        should.ok(cond instanceof Value);
+        should.ok(code instanceof Value);
+        should.ok(cond.type.name == "BOOLEAN");
+        if (!cond.getNativeValue())
+            throw new Error(`assert violated ${code.getNativeValue()}`);
+    };
+
+    std.$NEW = function (x) {
+        should.ok(x instanceof Obj);
+        should.ok(x.type.base.name == "POINTER");
+        var p = new Value("POINTER", {
+            adr: std.nextInt(),
+            obj: new Obj(new Type("ANY"))
+        });
+        x.value(p);
     };
 
     std.start = function () {

@@ -83,6 +83,7 @@ function Writer(mod) {
                 case "BOOLEAN":
                 case "ANY":
                 case "BLOCK":
+                case "POINTER":
                     var attrs = {"type": e.type.name};
                     var val = e.value.toString();
                     should.exist(val);
@@ -172,6 +173,8 @@ function Writer(mod) {
                 w.expr(x, "param", inf);
             });
             inf.close();
+        } else if (ast.is(e).type("WildcardExpr")) {
+            root.push(xml({"wildcard-expression": {}}));
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
         }
@@ -250,9 +253,7 @@ function Writer(mod) {
             attrs["type"] = s.typetest ? "typetest" : "exprtest";
             var ch = xml.element({_attr: attrs});
             root.push({"choose": ch});
-            if (!_.isNull(s.expression)) {
-                w.expr(s.expression, "expression", ch);
-            }
+            s.expression.forEach(e => w.expr(e, "expression", ch));
             s.branches.forEach(c => w.branch(c, ch));
             ch.close();
         } else {
@@ -308,6 +309,9 @@ function Writer(mod) {
                 let o = b.objects[v];
                 w.variable(o, block);
             }
+            b.pre.forEach(pre => w.expr(pre, "precondition", block));
+            b.post.forEach(post => w.expr(post, "postcondition", block));
+
             var sequence = xml.element();
             block.push({"sequence": sequence});
             b.sequence.forEach(function (s) {

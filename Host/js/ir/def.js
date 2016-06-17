@@ -110,6 +110,31 @@ module.exports.std = function () {
                         param: {type: "value", number: 1}
                     }
                 }
+            },
+            {
+                name: "ASSERT",
+                objects: {
+                    "condition": {
+                        name: "condition",
+                        type: {name: "BOOLEAN"},
+                        param: {type: "value", number: 0}
+                    },
+                    "code": {
+                        name: "code",
+                        type: {name: "ANY"},
+                        param: {type: "value", number: 1}
+                    }
+                }
+            },
+            {
+                name: "NEW",
+                objects: {
+                    "p": {
+                        name: "p",
+                        type: {name: "POINTER"},
+                        param: {type: "reference", number: 0}
+                    }
+                }
             }
         ]
     };

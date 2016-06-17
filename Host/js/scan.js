@@ -87,13 +87,11 @@ function Scanner(source) {
         "PAR": s.PAR = thisSym("PAR"),
         "INFIX": s.INFIX = thisSym("INFIX"),
         "CONST": s.CONST = thisSym("CONST"),
-        
         "NONE": s.NONE = thisSym("NONE"),
         "TRUE": s.TRUE = thisSym("TRUE"),
         "FALSE": s.FALSE = thisSym("FALSE"),
         "NIL": s.NIL = thisSym("NIL"),
         "TYPE": s.TYPE = thisSym("TYPE"),
-
         "IF": s.IF = thisSym("IF"),
         "THEN": s.THEN = thisSym("THEN"),
         "ELSE": s.ELSE = thisSym("ELSE"),
@@ -106,7 +104,9 @@ function Scanner(source) {
         "CHOOSE": s.CHOOSE = thisSym("CHOOSE"),
         "OF": s.OF = thisSym("OF"),
         "AS": s.AS = thisSym("AS"),
-        "OR": s.OR = thisSym("OR")
+        "OR": s.OR = thisSym("OR"),
+        "PRE": s.PRE = thisSym("PRE"),
+        "POST": s.POST = thisSym("POST")
     };
 
     this["eof"] = false;

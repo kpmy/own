@@ -66,6 +66,8 @@ function Block() {
     this.objects = {};
     this.exported = false;
     this.infix = false;
+    this.pre = [];
+    this.post = [];
 }
 
 function Definition() {
@@ -160,6 +162,10 @@ function InfixExpr() {
     this.params = [];
 }
 
+function WildcardExpr() {
+
+}
+
 function Expr() {
     this.constant = function (type, value) {
         var ret = new ConstExpr();
@@ -204,8 +210,18 @@ function Expr() {
 
     this.infix = function () {
         return new InfixExpr();
+    };
+
+    this.wildcard = function () {
+        return new WildcardExpr();
     }
 }
+
+module.exports.isExpression = function (x) {
+    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr)
+        || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp) || (x instanceof MonadicOp)
+        || (x instanceof InfixExpr) || (x instanceof WildCardExpr);
+};
 
 function Assign() {
     this.expression = null;
@@ -249,7 +265,7 @@ function InvCycle() {
 }
 
 function Choose() {
-    this.expression = null;
+    this.expression = [];
     this.branches = [];
     this.otherwise = [];
     this.typetest = false;
@@ -284,6 +300,10 @@ function Stmt() {
         return new Choose();
     }
 }
+
+module.exports.isStatement = function (x) {
+    return (x instanceof Assign) || (x instanceof Call) || (x instanceof Conditional) || (x instanceof Cycle) || (x instanceof InvCycle) || (x instanceof Choose);
+};
 
 module.exports.mod = function () {
     return new Module();
@@ -335,12 +355,4 @@ let is = function (o) {
 
 module.exports.is = is;
 
-module.exports.isStatement = function (x) {
-    return (x instanceof Assign) || (x instanceof Call) || (x instanceof Conditional) || (x instanceof Cycle) || (x instanceof InvCycle) || (x instanceof Choose);
-};
 
-module.exports.isExpression = function (x) {
-    return (x instanceof CallExpr) || (x instanceof SelectExpr) || (x instanceof ConstExpr)
-        || (x instanceof DerefExpr) || (x instanceof DotExpr) || (x instanceof DyadicOp) || (x instanceof MonadicOp)
-        || (x instanceof InfixExpr);
-};

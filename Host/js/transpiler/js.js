@@ -246,6 +246,8 @@ function Builder(mod) {
                 var enc = null;
                 if (_.isEqual(e.type.name, "ANY") && _.isEqual(v, "NONE")) {
                     v = "global.NONE";
+                } else if (_.isEqual(e.type.name, "POINTER") && _.isEqual(v, "NIL")) {
+                    v = "{adr: 0}";
                 } else if (_.isEqual(e.type.name, "STRING")) {
                     v = "`" + new Buffer(v).toString("base64") + "`";
                     enc = "base64";
@@ -253,12 +255,14 @@ function Builder(mod) {
                     v = v.charCodeAt(0);
                     enc = "charCode"
                 }
-                if(!_.isNull(enc)) {
+                if (!_.isNull(enc)) {
                     b.write(`new rts.Value("${e.type.name}", ${v}, "${enc}")`);
                 } else {
                     b.write(`new rts.Value("${e.type.name}", ${v})`);
                 }
             }
+        } else if (ast.is(e).type("WildcardExpr")) {
+            b.write("true");
         } else if (ast.is(e).type("CallExpr")) {
             var m = "mod";
             var block = null;
@@ -428,21 +432,37 @@ function Builder(mod) {
             b.write(`)}`);
         } else if (ast.is(s).type("Choose")) {
             var cond = null;
-            if (s.typetest || !_.isNull(s.expression)) {
+            if (s.typetest || s.expression.length == 1) {
                 cond = "cond" + b.nextInt();
                 b.write(`var ${cond} = new rts.Value("ANY", `);
-                b.expr(s.expression);
+                b.expr(s.expression[0]);
                 b.ln(")");
+            } else if (s.expression.length > 1) {
+                cond = [];
+                var base = "cond" + b.nextInt();
+                s.expression.forEach((e, i, $) => {
+                    cond.push(base + "_" + i);
+                    b.write(`var ${cond[i]} = new rts.Value("ANY", `);
+                    b.expr(e);
+                    b.ln(")");
+                });
             }
             s.branches.forEach((br, i, $) => {
                 if (i > 0) b.write(" else ");
                 b.write("if(");
                 br.condition.forEach((c, i, $) => {
-                    if (i > 0) b.write(" || ");
                     if (s.typetest) {
                         b.write(`${cond}.isTypeEqual(`);
-                    } else if (!_.isNull(s.expression)) {
+                    } else if (s.expression.length == 1) {
+                        if (i > 0) b.write(" || ");
                         b.write(`${cond}.isValueEqual(`);
+                    } else if (s.expression.length > 1) {
+                        if (i > 0) b.write(" && ");
+                        if (!ast.is(c).type("WildcardExpr")) {
+                            b.write(`${cond[i]}.isValueEqual(`);
+                        } else {
+                            b.write("(")
+                        }
                     } else {
                         b.write(`rts.getNative("boolean", `);
                     }
@@ -502,10 +522,26 @@ function Builder(mod) {
             }
             b.ln();
         });
+
+        block.pre.forEach((pre, i, $) => {
+            b.write(`if(!rts.getNative("boolean", `);
+            b.expr(pre);
+            b.write(`)) throw new Error("precondition ${i} violated");`);
+            b.ln();
+        });
+
         block.sequence.forEach(function(s){
             b.stmt(s);
             b.ln(";");
         });
+
+        block.post.forEach((post, i, $) => {
+            b.write(`if(!rts.getNative("boolean", `);
+            b.expr(post);
+            b.write(`)) throw new Error("postcondition ${i} violated");`);
+            b.ln();
+        });
+
         b.write(`console.log("leave ${mod.name}.${block.name}");\n`);
         b.write(`}`);
     };

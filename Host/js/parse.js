@@ -284,6 +284,9 @@ function Parser(sc, resolver) {
             } else if (p.pr.is(sc.NONE)) {
                 e.push(ast.expr().constant(types.ANY, "NONE"));
                 p.pr.next();
+            } else if (p.pr.is(sc.NIL)) {
+                e.push(ast.expr().constant(types.POINTER, "NIL"));
+                p.pr.next();
             } else if (p.pr.is(sc.LBRACE)) {
                 p.pr.next();
                 var val = [];
@@ -795,7 +798,14 @@ function Parser(sc, resolver) {
                 var c = ast.stmt().choose();
                 var typ = free;
                 if (!p.pr.wait(sc.OF, sc.DELIMITER, sc.SEPARATOR)) {
-                    c.expression = new Expression().value;
+                    for (var brk = false; !brk;) {
+                        c.expression.push(new Expression().value);
+                        if (p.pr.wait(sc.COMMA, sc.DELIMITER)) {
+                            p.pr.next();
+                        } else {
+                            brk = true;
+                        }
+                    }
                     if (p.pr.wait(sc.OF, sc.DELIMITER, sc.SEPARATOR)) {
                         typ = exprtest
                     } else if (p.pr.is(sc.AS)) {
@@ -819,7 +829,13 @@ function Parser(sc, resolver) {
                         var bunch = [];
                         if (typ == free || typ == exprtest) {
                             for (; ;) {
-                                var ex = new Expression();
+                                var ex = {};
+                                if (p.pr.wait(sc.TIMES, sc.DELIMITER)) {
+                                    ex.value = ast.expr().wildcard();
+                                    p.pr.next();
+                                } else {
+                                    ex = new Expression();
+                                }
                                 bunch.push(ex.value);
                                 if (p.pr.wait(sc.COLON, sc.DELIMITER)) {
                                     p.pr.next();
@@ -843,6 +859,10 @@ function Parser(sc, resolver) {
                         b.stmts = os;
                         var br = c.branch();
                         br.sequence = ns;
+                        if (c.expression.length > 1)
+                            if (bunch.length != c.expression.length)
+                                p.sc.mark("wrong expression number");
+
                         br.condition = bunch;
                         br.multiple = true;
                         c.branches.push(br);
@@ -1037,6 +1057,8 @@ function Parser(sc, resolver) {
                 block.name = pb.name;
                 block.exported = pb.exported;
                 block.infix = pb.infix;
+                block.pre = pb.pre;
+                block.post = pb.post;
                 b.blocks.push(block);
             }
             p.tgt.mod.blocks = b.blocks;
@@ -1123,6 +1145,14 @@ function Parser(sc, resolver) {
                         }
                     }
                 }
+            }
+            while (p.pr.wait(sc.PRE, sc.DELIMITER, sc.SEPARATOR)) {
+                p.pr.next();
+                b.pre.push(new Expression().value);
+            }
+            while (p.pr.wait(sc.POST, sc.DELIMITER, sc.SEPARATOR)) {
+                p.pr.next();
+                b.post.push(new Expression().value);
             }
             if (p.pr.wait(sc.BEGIN, sc.DELIMITER, sc.SEPARATOR)) {
                 p.pr.next();

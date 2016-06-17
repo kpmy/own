@@ -1,0 +1,23 @@
+UNIT Test13
+
+    VAR z INTEGER; p, q POINTER
+
+    BLOCK Do0
+        VAR x, y INTEGER
+        PAR x
+        PRE x > 0
+        PRE x # 0
+        POST y > 0
+    BEGIN
+        ASSERT[z = 1, 20]
+        x -> y
+    END Do0
+
+START
+    1 -> z
+    Do0[1]
+    NEW[p]
+    IF p # NIL THEN 43 -> p END;
+    p -> q
+    NIL -> p
+END Test13

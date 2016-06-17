@@ -1,6 +1,6 @@
 UNIT Test12
 
-    VAR x, y INTEGER; t TYPE
+    VAR x, y, z INTEGER; t TYPE
 
 START
     IF x IS INTEGER THEN
@@ -28,5 +28,10 @@ START
     OF x = 1 : 2 -> y
     OR x = 2 : 3 -> y
     ELSE 0 -> y END;
+
+    CHOOSE x, y, z
+    OF 1, *, 2 : NONE -> t
+    OR 3, 4, 5 + 1 : NONE -> t
+    ELSE NONE -> t END;
 
 END Test12
