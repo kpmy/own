@@ -1,0 +1,6 @@
+UNIT Init
+    IMPORT Core Log
+START
+    Log.String["own started"]
+    Core.Load["Demo0"]
+END Init

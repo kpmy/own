@@ -2,12 +2,14 @@
  * Created by kpmy on 11.06.2016.
  */
 global.rerequire = require("require-new");
-let own = require("./Host")(__dirname + "/Own");
+let root = __dirname + "/Own";
+let own = require("./Host")(root);
 
-let name = "Test13";
+let name = "Demo0";
 own.compile(name);
-own.rts.load(name);
-own.rts.dump();
+own.rts.load("Core");
+own.rts.load("Init");
+//own.rts.dump();
 
 function build() {
     Array.from(arguments).forEach(x => {
@@ -17,4 +19,5 @@ function build() {
 }
 
 //build("Simple", "Log", "Test0", "Test1", "Test2", "Test3", "Test4", "Test5", "Test6", "Test7", "Test8", "Test9", "Test10", "Test11", "Test12", "Test13");
+//build("Core", "Log", "Init", "Demo0");
 //process.exit();

@@ -1,0 +1,1 @@
+{"definition":{"name":"Core","imports":[],"objects":{},"blocks":[{"name":"Load","infix":false,"objects":{"name":{"name":"name","type":{"name":"STRING"},"param":{"type":"value","number":0}}}}]}}

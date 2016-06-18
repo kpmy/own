@@ -1,3 +1,10 @@
 UNIT Log
+    IMPORT Console;
 
+    BLOCK String*
+        VAR s STRING
+        PAR s
+    BEGIN
+        Console.Print[s]
+    END String
 END Log

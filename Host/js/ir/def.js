@@ -135,6 +135,21 @@ module.exports.std = function () {
                         param: {type: "reference", number: 0}
                     }
                 }
+            },
+            {
+                name: "HANDLE",
+                objects: {
+                    "msg": {
+                        name: "msg",
+                        type: {name: "MAP"},
+                        param: {type: "value", number: 0}
+                    },
+                    "result": {
+                        name: "result",
+                        type: {name: "MAP"},
+                        param: {type: "reference", number: 1}
+                    }
+                }
             }
         ]
     };

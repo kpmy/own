@@ -1163,7 +1163,7 @@ function Parser(sc, resolver) {
             p.pr.expect(sc.IDENT, sc.DELIMITER);
             should.ok(!p.isMod());
             if (!_.isEqual(b.name, p.pr.identifier().id))
-                p.sc.mark("block name expected ", pb.name);
+                p.sc.mark("block name expected ", b.name);
             p.pr.next();
         } else {
             p.sc.mark("unexpected block type ", sym.code);

@@ -1,0 +1,10 @@
+UNIT Core
+
+    BLOCK Load*
+    VAR name STRING;
+    PAR name
+    BEGIN
+        HANDLE[{"type": "load", "name": name}];
+    END Load
+
+END Core

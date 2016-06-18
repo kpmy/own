@@ -1,1 +1,1 @@
-{"definition":{"name":"Log","imports":[],"objects":{},"blocks":[]}}
+{"definition":{"name":"Log","imports":["Console"],"objects":{},"blocks":[{"name":"String","infix":false,"objects":{"s":{"name":"s","type":{"name":"STRING"},"param":{"type":"value","number":0}}}}]}}

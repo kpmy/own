@@ -1,1 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?><unit name="Log" xmlns:ot="urn:kpmy:ot"></unit>
+<?xml version="1.0" encoding="UTF-8"?><unit name="Log" xmlns:ot="urn:kpmy:ot"><import name="Console"/><block name="String" exported="true" infix="false"><variable name="s" type="STRING" param="value" order="0"/><sequence><call><expression><call-expression module="Console" name="Print"><parameter><select-expression><selector module="Log" name="s" block="String"></selector></select-expression></parameter></call-expression></expression></call></sequence></block></unit>

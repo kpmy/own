@@ -492,8 +492,8 @@ function Builder(mod) {
 
     b.block = function (block) {
         b.write(`mod.$${block.name} = function(){\n`);
-        b.write(`console.log("enter ${mod.name}.${block.name}");\n`);
-        b.write(`console.dir(arguments, {depth: null});\n`);
+        //b.write(`console.log("enter ${mod.name}.${block.name}");\n`);
+        //b.write(`console.dir(arguments, {depth: null});\n`);
         var par = [];
         for(v in block.objects) {
             var o = block.objects[v];
@@ -542,7 +542,7 @@ function Builder(mod) {
             b.ln();
         });
 
-        b.write(`console.log("leave ${mod.name}.${block.name}");\n`);
+        //b.write(`console.log("leave ${mod.name}.${block.name}");\n`);
         b.write(`}`);
     };
 
@@ -585,7 +585,7 @@ function Builder(mod) {
 
         b.write(`mod.start = function(){\n`);
 
-        b.write(`console.log('dynamic load ${mod.name}'); \n`);
+        //b.write(`console.log('dynamic load ${mod.name}'); \n`);
         
         if(!_.isEmpty(mod.start)){
             mod.start.forEach(function(s){

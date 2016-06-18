@@ -416,6 +416,15 @@ Value.prototype.getNativeValue = function(){
         case "POINTER":
             ret = v.value;
             break;
+        case "MAP":
+            ret = {};
+            for (var i = 0; i < v.value.length; i++) {
+                var k = v.value[i][0].getNativeValue();
+                var x = v.value[i][1].getNativeValue();
+                should.ok(typeof k == "string");
+                ret[k] = x;
+            }
+            break;
         default:
             throw new Error(`unsupported native type ${v.type.name}`);
     }
@@ -687,7 +696,7 @@ function ValueMath() {
     }
 }
 
-function Std() {
+function Std(rts) {
     const std = this;
 
     var next = 0;
@@ -752,6 +761,22 @@ function Std() {
         x.value(p);
     };
 
+    std.handle = function (e) {
+        switch (e.type) {
+            case "load":
+                rts.load(e.name);
+                break;
+            default:
+                throw new Error(`unknown message type ${e.type}`);
+        }
+    };
+
+    std.$HANDLE = function (msg, res) {
+        should.ok(msg instanceof Value);
+        should.ok(msg.type.name == "MAP");
+        std.handle(msg.getNativeValue());
+    };
+
     std.start = function () {
     }
 }
@@ -776,7 +801,8 @@ function RTS(pwd) {
         if(rts.modulesCache.hasOwnProperty(name)){
             return rts.modulesCache[name];
         }
-        var mod = _.isEqual(name, "$std") ? new Std() : rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
+        console.log(`rts.load ${name}`);
+        var mod = _.isEqual(name, "$std") ? new Std(rts) : rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
         should.exist(mod);
         rts.modules.push(mod);
         rts.modulesCache[name] = mod;
