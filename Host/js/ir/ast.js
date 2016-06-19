@@ -141,7 +141,7 @@ function DerefExpr() {
 }
 
 function DotExpr() {
-
+    this.value = null;
 }
 
 function DyadicOp() {
@@ -164,6 +164,10 @@ function InfixExpr() {
 
 function WildcardExpr() {
 
+}
+
+function CastExpr() {
+    this.expression = null;
 }
 
 function Expr() {
@@ -194,6 +198,10 @@ function Expr() {
 
     this.dot = function () {
         return new DotExpr();
+    };
+
+    this.cast = function () {
+        return new CastExpr();
     };
 
     this.dyadic = function (op) {

@@ -6,6 +6,7 @@ const _ = require('underscore');
 
 const ast = rerequire("../ir/ast.js");
 const tpl = rerequire("../ir/tpl.js").struct();
+const types = rerequire("../ir/types.js")();
 
 function Builder(mod) {
     const b = this;
@@ -133,6 +134,12 @@ function Builder(mod) {
                 select(eb);
             eb.length = 0;
         }
+
+        function cast(e) {
+            b.write(".cast(");
+            b.expr(e);
+            b.write(")");
+        }
         if(!_.isEmpty(s.inside)){
             var eb = [];
             Array.from(s.inside)
@@ -140,8 +147,14 @@ function Builder(mod) {
                     if(ast.is(e).type("DerefExpr")) {
                         flush(eb);
                         deref();
-                    } else if (ast.is(e).type("DotExpr")){
+                    } else if (ast.is(e).type("DotExpr")) {
                         flush(eb);
+                        if (!_.isNull(eb.value)) {
+                            select([ast.expr().constant(types.ATOM, e.value)]);
+                        }
+                    } else if (ast.is(e).type("CastExpr")) {
+                        flush(eb);
+                        cast(e.expression);
                     } else {
                         eb.push(e);
                     }

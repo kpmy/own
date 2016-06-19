@@ -5,10 +5,11 @@ global.rerequire = require("require-new");
 let root = __dirname + "/Own";
 let own = require("./Host")(root);
 
-let name = "Demo0";
+let name = "Test14";
 own.compile(name);
 own.rts.load("Core");
-own.rts.load("Init");
+//own.rts.load("Init");
+own.rts.load(name);
 //own.rts.dump();
 
 function build() {

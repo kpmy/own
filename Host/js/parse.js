@@ -5,6 +5,7 @@ const _ = require("underscore");
 const ast = rerequire("./ir/ast.js");
 const tpl = rerequire("./ir/tpl.js");
 const types = rerequire("./ir/types.js")();
+const target = rerequire("./target.js");
 
 function Parser(sc, resolver) {
     const p = this; //use with care within closures...
@@ -249,7 +250,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.IDENT);
                 var id = p.pr.identifier(false);
                 p.pr.next();
-                if (p.pr.wait(sc.COLON)) {
+                if (p.pr.wait(sc.BRICK)) {
                     p.pr.next();
                     var t = new Template(id.id);
                     var c = ast.expr().constant(types.ATOM, id.id);
@@ -637,6 +638,7 @@ function Parser(sc, resolver) {
         sel.name = id.id;
         var pure = true;
         var deref = false;
+        var cast = false;
         var cascade = 0;
         for (var stop = false; !stop;) {
             if (p.pr.wait(sc.DOLLAR)) {
@@ -644,6 +646,36 @@ function Parser(sc, resolver) {
                 pure = false;
                 deref = true;
                 sel.inside.push(ast.expr().deref());
+            } else if (p.pr.wait(sc.DOT)) {
+                p.pr.next();
+                pure = false;
+                var d = ast.expr().dot();
+                p.pr.expect(sc.IDENT);
+                var i = p.pr.identifier();
+                d.value = i.id;
+                p.pr.next();
+                sel.inside.push(d);
+                cascade++
+            } else if (p.pr.wait(sc.LPAREN)) {
+                p.pr.next();
+                pure = false;
+                cast = true;
+                var to = null;
+                if (p.pr.wait(sc.IDENT)) {
+                    to = p.obj(b);
+                } else if (p.pr.is(sc.BLOCK)) {
+                    p.pr.next();
+                    to = ast.expr().constant(types.TYPE, types.BLOCK);
+                } else {
+                    p.sc.mark("not a type");
+                }
+                p.pr.expect(sc.RPAREN);
+                p.pr.next();
+                should.exist(to);
+                var c = ast.expr().cast();
+                c.expression = to;
+                sel.inside.push(c);
+                cascade++;
             } else if (p.pr.wait(sc.LBRAK)) {
                 p.pr.next();
                 if (cascade) {
@@ -693,7 +725,7 @@ function Parser(sc, resolver) {
         } else if (foreign && !p.tgt.isBlock(sel.module, sel.name)) {
             p.sc.mark(`identifier not found ${sel.module} ${sel.name}`);
         } else {
-            if (deref || cascade > 1)
+            if (deref || cast || cascade > 1)
                 p.sc.mark("multiple selectors not allowed here");
 
             var call = ast.expr().call(sel.module, sel.name);
@@ -1175,7 +1207,7 @@ function Parser(sc, resolver) {
         p.pr.next();
         p.pr.expect(sc.IDENT, sc.DELIMITER);
         var mod = p.pr.identifier().id;
-        p.tgt = rerequire("./target.js")(mod, p.sc);
+        p.tgt = target(mod, p.sc);
         var block = p.tgt.pushBlock();
         block.isModule = true;
         block.name = mod;

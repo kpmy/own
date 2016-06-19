@@ -1,3 +1,23 @@
 UNIT Test14
 
+	IMPORT Console
+
+	VAR file MAP; x INTEGER;
+	VAR proc BLOCK;
+
+	BLOCK Do
+	BEGIN
+		10 -> x
+	END Do
+
+START
+	{"name": "Test14", @ext: "ow", @doit: NONE} -> file
+	Console.Print[file]
+	Console.Print[file["name"], file[@ext]]
+	"og" -> file.ext
+	Console.Print[file["name"], file.ext]
+	Do -> file.doit
+	file.doit(BLOCK) -> proc
+	proc
+	Console.Print[x]
 END Test14

@@ -149,7 +149,11 @@ function Writer(mod) {
         } else if (ast.is(e).type("DerefExpr")) {
             root.push({"deref-expression": {}})
         } else if (ast.is(e).type("DotExpr")) {
-            root.push({"dot-expression": {}})
+            var o = {};
+            if (!_.isNull(e.value)) {
+                o = [o, e.value];
+            }
+            root.push({"dot-expression": o})
         } else if (ast.is(e).type("DyadicOp")) {
             var op = xml.element({_attr: {"op": e.op}});
             root.push({"dyadic-op": op});
@@ -175,6 +179,8 @@ function Writer(mod) {
             inf.close();
         } else if (ast.is(e).type("WildcardExpr")) {
             root.push({"wildcard-expression": {}});
+        } else if (ast.is(e).type("CastExpr")) {
+            w.expr(e.expression, "cast-expression", root);
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
         }

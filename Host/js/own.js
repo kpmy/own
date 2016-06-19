@@ -34,7 +34,7 @@ function Own(root) {
         var p = rerequire("./parse.js")(sc, resolveDef(root));
         var mod = p.mod();
         should.exist(mod);
-        console.dir(mod, {depth: null});
+        //console.dir(mod, {depth: null});
 
         var def = rerequire("./ir/def.js").write(mod);
         var dd = fs.openSync(root + "/" + name + ".od", "w");

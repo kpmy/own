@@ -178,6 +178,18 @@ function Obj(t, cv) {
             };
             o.call = notImpl;
             o.select = notImpl;
+            o.cast = function (t) {
+                should.ok(t instanceof Value);
+                should.ok(_.isEqual(t.type.name, "TYPE"));
+                should.ok(_.isEqual(t.value.name, o.val.get().value.type.name));
+                var cv = {
+                    get: function () {
+                        return Value.prototype.copyOf(o.val.get().value);
+                    },
+                    set: notImpl
+                };
+                return new Obj(new Type(t.value.name), cv);
+            };
             break;
         case "POINTER":
             o.value = function (x) {
@@ -450,6 +462,9 @@ Value.prototype.isValueEqual = function(that){
             switch (this.type.name){
                 case "STRING":
                     ret = _.isEqual(this.getNativeValue(), that.getNativeValue());
+                    break;
+                case "ATOM":
+                    ret = _.isEqual(this.value, that.value);
                     break;
                 default:
                     throw new Error(`equality not supported ${this.type.name}`);

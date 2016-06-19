@@ -2,17 +2,8 @@ function UnitConsole(rts) {
     const mod = this;
 
     mod.$Print = function () {
-        var out = Array.from(arguments)
-            .map(x => rts.isValue(x) ? x.value : "")
-            .concat();
-        /*out.forEach(x => {
-         if (typeof x =="string"){
-         for(var i = 0; i<x.length; i++){
-         console.log(x.charCodeAt(i));
-         }
-         }
-         });*/
-        console.log(...out);
+        console.log("debug dump");
+        Array.from(arguments).forEach(a => console.dir(a, {depth: null}));
     };
 
     mod.start = function () {
