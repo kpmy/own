@@ -801,7 +801,7 @@ function RTS(pwd) {
         if(rts.modulesCache.hasOwnProperty(name)){
             return rts.modulesCache[name];
         }
-        console.log(`rts.load ${name}`);
+        //console.log(`rts.load ${name}`);
         var mod = _.isEqual(name, "$std") ? new Std(rts) : rerequire(pwd + "/" + name + ".js")(rts); // рекурсивно вызывает rts.load для импортов
         should.exist(mod);
         rts.modules.push(mod);
