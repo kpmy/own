@@ -1,0 +1,15 @@
+UNIT Test15
+
+	IMPORT Console
+
+	CONST
+		TYPE:
+			BASE: INTEGER;
+		; -> BYTE
+
+	VAR x INTEGER; y BYTE;
+START
+	10 -> x
+	44 -> y
+	Console.Print[x + y]
+END Test15

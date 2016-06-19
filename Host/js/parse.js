@@ -563,23 +563,14 @@ function Parser(sc, resolver) {
                         imp.name = name;
                         imp.alias = alias;
                         imp.def = p.resolve(name);
-                        /*if (!cache.hasOwnProperty(name)) {
-                            var noCycleCheck = function (def) {
-                                cache[name].def = def;
-                                const noCycle = function (i) {
-                                    i.def.imports.forEach(function (ii) {
-                                        if (_.isEqual(ii, p.tgt.mod.name)) {
-                                            p.sc.mark("cyclic import from ", i.name);
-                                        } else {
-                                            p.resolve(ii).then(noCycleCheck);
-                                        }
-                                    });
-                                };
-                                noCycle(cache[name]);
-                            };
-                            p.resolve(name).then(noCycleCheck);
-                            cache[name] = imp;
-                         }*/ //TODO проверить циклический импорт
+                        const noCycle = function (i) {
+                            i.def.imports.forEach(function (ii) {
+                                if (_.isEqual(ii, p.tgt.mod.name)) {
+                                    p.sc.mark("cyclic import from ", i.name);
+                                }
+                            });
+                        };
+                        noCycle(imp);
                         b.imports.push(imp);
                         cache[name] = imp;
                     } else {

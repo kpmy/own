@@ -1,11 +1,9 @@
-/**
- * Created by kpmy on 11.06.2016.
- */
+/* Created by kpmy on 11.06.2016 */
 global.rerequire = require("require-new");
 let root = __dirname + "/Own";
 let own = require("./Host")(root);
 
-let name = "Test14";
+let name = "Test15";
 own.compile(name);
 own.rts.load("Core");
 //own.rts.load("Init");
