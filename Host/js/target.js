@@ -1,8 +1,10 @@
 /* Created by kpmy on 12.05.2016 */
 const _ = require("underscore");
+const should = require("should");
+
 const ast = rerequire("./ir/ast.js");
 const def = rerequire("./ir/def.js");
-const should = require("should");
+const owl2 = rerequire("./owl2");
 
 function Block() {
     this.imports = [];
@@ -122,6 +124,11 @@ function Target(name, sc) {
 
     t.compatibleTypes = function (tgt, src) {
         return true;
+    };
+
+    t.registerType = function (t) {
+        should.exist(t.value);
+        owl2.build(t.value);
     }
 }
 

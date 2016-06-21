@@ -27,6 +27,9 @@ function Writer(mod) {
                     case "STRING":
                         tn.push({"ot:value": [{_attr: attrs}, v.value]});
                         break;
+                    case "INTEGER":
+                        tn.push({"ot:value": [{_attr: attrs}, v.value]});
+                        break;
                     default:
                         throw new Error(`unknown child type ${JSON.stringify(v.type.name)}`);
                 }

@@ -34,6 +34,9 @@ function Builder(mod) {
             case "STRING":
                 x = "`" + v.value + "`";
                 break;
+            case "INTEGER":
+                x = v.value;
+                break;
             default:
                 throw new Error(`unknown value type ${v.type.name}`);
         }

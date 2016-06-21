@@ -72,10 +72,11 @@ function Parser(sc, resolver) {
                     } else if (p.pr.is(sc.MINUS)) {
                         p.pr.next();
                         var pt = new instr.Put();
-                        if (p.pr.wait(sc.NUMBER)) {
+                        if (p.pr.wait(sc.NUM)) {
                             var value = p.pr.num();
                             pt.type = value.type;
                             pt.value = -value.value;
+                            p.pr.next();
                         } else {
                             p.sc.mark("number expected");
                         }
@@ -155,14 +156,17 @@ function Parser(sc, resolver) {
         t.root = new struct.Leaf();
         t.root.qid = new struct.Qualident(undefined, rid);
         t.root.clazz = new struct.Clazz(undefined, rid);
+        t.root.unique = true;
         p.pr.pass(sc.SEPARATOR, sc.DELIMITER);
-        t.block();
-        p.pr.expect(sc.SEMICOLON, sc.SEPARATOR, sc.DELIMITER);
+        for (var stop = false; !stop;) {
+            t.block();
+            var x = struct.run(t.ii);
+            t.root.push(x);
+            t.ii = [];
+            stop = p.pr.wait(sc.SEMICOLON, sc.SEPARATOR, sc.DELIMITER);
+        }
         p.sc.strict = false; //turn of semicolons
         p.pr.next();
-        var ret = struct.run(t.ii);
-        ret.up = t.root;
-        t.root.children.push(ret);
         //console.dir(t.root, {depth: null});
     }
     
@@ -250,7 +254,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.IDENT);
                 var id = p.pr.identifier(false);
                 p.pr.next();
-                if (p.pr.wait(sc.BRICK)) {
+                if (p.pr.wait(sc.BRICK, sc.DELIMITER)) {
                     p.pr.next();
                     var t = new Template(id.id);
                     var c = ast.expr().constant(types.ATOM, id.id);
@@ -261,7 +265,7 @@ function Parser(sc, resolver) {
                 }
             } else if (p.pr.is(sc.TYPE)) {
                 p.pr.next();
-                p.pr.expect(sc.COLON);
+                p.pr.expect(sc.BRICK, sc.DELIMITER);
                 p.pr.next();
                 var t = new Template("TYPE");
                 var c = ast.expr().constant(types.TYPE, t.root);
@@ -599,6 +603,7 @@ function Parser(sc, resolver) {
                     if (_.isEqual(c.expression.type, types.TYPE)) {
                         t = types.userType(tid.id);
                         t.value = c.expression.value;
+                        p.tgt.registerType(t);
                         ft(t);
                     } else {
                         p.sc.mark("not a type");

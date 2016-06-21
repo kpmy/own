@@ -210,7 +210,7 @@ function Scanner(source) {
             }
         }
         if (!this.eof || !(_.isEmpty(buf))) {
-            if (this.keyTab.hasOwnProperty(buf)) {
+            if (!s.strict && this.keyTab.hasOwnProperty(buf)) {
                 sym = this.keyTab[buf];
             } else {
                 sym = thisSym("IDENT");

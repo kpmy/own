@@ -1,0 +1,10 @@
+{
+  "name": "owl2",
+  "version": "0.0.1",
+  "main": "./owl2.js",
+  "private": true,
+  "dependencies": {
+    "should": "^8.3.1",
+    "underscore": "^1.8.3"
+  }
+}

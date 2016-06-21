@@ -3,13 +3,14 @@ UNIT Test15
 	IMPORT Console
 
 	CONST
-		TYPE:
-			BASE: INTEGER;
-		; -> BYTE
+		TYPE :: SubClassOf: INTEGER;
+              SubClassOf: hasIntValue exactly 1
+                      AND hasIntValue some INTEGER: -128 127;;
+            ; -> BYTE
 
 	VAR x INTEGER; y BYTE;
 START
 	10 -> x
 	44 -> y
-	Console.Print[x + y]
+	(* Console.Print[x + y] *)
 END Test15

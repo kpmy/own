@@ -131,6 +131,9 @@ function Struct() {
                     case "STRING":
                         top.children.push(new Value(s.type, s.value));
                         break;
+                    case "INTEGER":
+                        top.children.push(new Value(s.type, parseInt(s.value, 10)));
+                        break;
                     default:
                         throw new Error(`unknown value with type ${s.type.name}`);
                 }
