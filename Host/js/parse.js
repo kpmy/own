@@ -205,12 +205,12 @@ function Parser(sc, resolver) {
         };
 
         e.push = function (x) {
-            if (ast.is(x).type("DyadicOp")) {
+            if (is(x).type("DyadicOp")) {
                 x.right = e.pop();
                 x.left = e.pop();
-            } else if (ast.is(x).type("MonadicOp")) {
+            } else if (is(x).type("MonadicOp")) {
                 x.expr = e.pop();
-            } else if (ast.is(x).type("InfixExpr")) {
+            } else if (is(x).type("InfixExpr")) {
                 x.params.length = x.arity;
                 for (var i = x.arity - 1; i >= 0; i--) {
                     x.params[i] = e.pop();
@@ -223,7 +223,7 @@ function Parser(sc, resolver) {
         };
 
         e.noCall = function () {
-            if (ast.is(e.value).type("CallExpr")) {
+            if (is(e.value).type("CallExpr")) {
                 if (e.value.pure) {
                     var ref = ast.expr().constant(types.BLOCK, `${e.value.module}.${e.value.name}`);
                     e.value.fix = function (c) { //fix для ссылок на стандартные функции
@@ -272,11 +272,11 @@ function Parser(sc, resolver) {
                 e.push(c);
             } else if (p.pr.is(sc.IDENT)) {
                 var x = p.obj(p.tgt.block());
-                if (ast.is(x).type("Selector")) {
+                if (is(x).type("Selector")) {
                     e.push(ast.expr().select(x));
-                } else if (ast.is(x).type("ConstExpr")) {
+                } else if (is(x).type("ConstExpr")) {
                     e.push(x)
-                } else if (ast.is(x).type("CallExpr")) {
+                } else if (is(x).type("CallExpr")) {
                     existsBlock(x);
                     e.push(x)
                 } else {
@@ -362,7 +362,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.IDENT);
                 var inf = null;
                 var obj = p.obj(p.tgt.block());
-                if (ast.is(obj).type("Selector")) {
+                if (is(obj).type("Selector")) {
                     var o = p.tgt.thisObj(obj);
                     if (_.isEqual(o.type.name, "BLOCK")) {
                         inf = ast.expr().infix();
@@ -374,7 +374,7 @@ function Parser(sc, resolver) {
                     } else {
                         p.sc.mark("not a block reference");
                     }
-                } else if (ast.is(obj).type("CallExpr")) {
+                } else if (is(obj).type("CallExpr")) {
                     existsBlock(obj);
                     if (!obj.pure) { //TODO проверка параметров
                         p.sc.mark("parameters not allowed")
@@ -495,7 +495,7 @@ function Parser(sc, resolver) {
                 p.pr.expect(sc.IDENT);
                 var inf = null;
                 var obj = p.obj(p.tgt.block());
-                if (ast.is(obj).type("Selector")) {
+                if (is(obj).type("Selector")) {
                     var o = p.tgt.thisObj(obj);
                     if (_.isEqual(o.type.name, "BLOCK")) {
                         inf = ast.expr().infix();
@@ -507,7 +507,7 @@ function Parser(sc, resolver) {
                     } else {
                         p.sc.mark("not a block reference");
                     }
-                } else if (ast.is(obj).type("CallExpr")) {
+                } else if (is(obj).type("CallExpr")) {
                     existsBlock(obj);
                     if (!obj.pure) { //TODO проверка параметров
                         p.sc.mark("parameters not allowed")
@@ -599,7 +599,7 @@ function Parser(sc, resolver) {
                 ft(t);
             } else if (p.tgt.block().objects.hasOwnProperty(tid.id)) {
                 var c = p.tgt.block().objects[tid.id];
-                if (ast.is(c).type("Constant")) {
+                if (is(c).type("Constant")) {
                     if (_.isEqual(c.expression.type, types.TYPE)) {
                         t = types.userType(tid.id);
                         t.value = c.expression.value;
@@ -679,7 +679,7 @@ function Parser(sc, resolver) {
                 }
                 for (var end = false; !end;) {
                     var e = new Expression();
-                    if (!ast.is(e.value).type("CallExpr")) {
+                    if (!is(e.value).type("CallExpr")) {
                         sel.inside.push(e.value);
                     } else {
                         p.sc.mark("wrong expr")
@@ -915,7 +915,7 @@ function Parser(sc, resolver) {
             } else { //expr -> obj
                 var e = new Expression();
                 //console.log(e.value);
-                if (ast.is(e.value).type("CallExpr")) {
+                if (is(e.value).type("CallExpr")) {
                     if (!p.pr.wait(sc.ASSIGN, sc.DELIMITER)) {
                         var c = ast.stmt().call();
                         c.expression = e.value;
@@ -934,7 +934,7 @@ function Parser(sc, resolver) {
                     a.expression = e.value;
                     p.pr.expect(sc.IDENT, sc.SEPARATOR, sc.DELIMITER);
                     a.selector = p.obj(b);
-                    should.ok(ast.is(a.selector).type("Selector"));
+                    should.ok(is(a.selector).type("Selector"));
                     if (!p.tgt.compatibleTypes(a.selector, a.expression)) {
                         p.sc.mark("incompatible types");
                     }
@@ -944,7 +944,7 @@ function Parser(sc, resolver) {
                     }
                     b.stmts.push(a);
                 } else {
-                    if (ast.is(e.value).type("SelectExpr")) {
+                    if (is(e.value).type("SelectExpr")) {
                         var obj = p.tgt.thisObj(e.value.selector);
                         if (_.isEqual(obj.type.name, "BLOCK")) {
                             var a = ast.stmt().call();
@@ -953,7 +953,7 @@ function Parser(sc, resolver) {
                         } else {
                             p.sc.mark("not a statement");
                         }
-                    } else if (ast.is(e.value).type("CallExpr")) {
+                    } else if (is(e.value).type("CallExpr")) {
                         //do nothing
                     } else {
                         p.sc.mark("not a statement");
@@ -971,7 +971,7 @@ function Parser(sc, resolver) {
             var e = new Expression();
             var id = null;
             var cs = ast.constant();
-            if(ast.is(e.value).type("ConstExpr") && _.isEqual(e.value.type, types.ATOM)){
+            if (is(e.value).type("ConstExpr") && _.isEqual(e.value.type, types.ATOM)) {
                 id = {id: e.value.value};
                 if (b.objects.hasOwnProperty(id.id)) {
                     p.sc.mark("identifier already exists");

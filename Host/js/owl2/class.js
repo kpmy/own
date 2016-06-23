@@ -5,5 +5,7 @@
 module.exports = Class;
 
 function Class() {
-    
+    let c = this;
+
+    c.description = [];
 }

@@ -78,7 +78,7 @@ function Writer(mod) {
     };
 
     w.expr2 = function (e, root) {
-        if(ast.is(e).type("ConstExpr")) {
+        if (is(e).type("ConstExpr")) {
             switch (e.type.name){
                 case "STRING":
                 case "INTEGER":
@@ -110,7 +110,7 @@ function Writer(mod) {
                     var attrs = {"type": e.type.name};
                     var type = xml.element({_attr: attrs});
                     root.push({"constant-expression": type});
-                    if (ast.is(e.value).type("Type")) { //builtin type
+                    if (is(e.value).type("Type")) { //builtin type
                         root.push(e.value.name);
                     } else {
                         w.tpl(e.value, type);
@@ -136,7 +136,7 @@ function Writer(mod) {
                     throw new Error(`unknown value ${e.type.name}`);
             }
 
-        } else if (ast.is(e).type("CallExpr")) {
+        } else if (is(e).type("CallExpr")) {
             var attrs = {"module": e.module, "name": e.name};
             var call = xml.element({_attr: attrs});
             root.push({"call-expression": call});
@@ -144,31 +144,31 @@ function Writer(mod) {
                 w.param(x, call);
             });
             call.close();
-        } else if (ast.is(e).type("SelectExpr")) {
+        } else if (is(e).type("SelectExpr")) {
             var sel = xml.element();
             root.push({"select-expression": sel});
             w.sel(e.selector, sel);
             sel.close();
-        } else if (ast.is(e).type("DerefExpr")) {
+        } else if (is(e).type("DerefExpr")) {
             root.push({"deref-expression": {}})
-        } else if (ast.is(e).type("DotExpr")) {
+        } else if (is(e).type("DotExpr")) {
             var o = {};
             if (!_.isNull(e.value)) {
                 o = [o, e.value];
             }
             root.push({"dot-expression": o})
-        } else if (ast.is(e).type("DyadicOp")) {
+        } else if (is(e).type("DyadicOp")) {
             var op = xml.element({_attr: {"op": e.op}});
             root.push({"dyadic-op": op});
             w.expr(e.left, "left", op);
             w.expr(e.right, "right", op);
             op.close();
-        } else if (ast.is(e).type("MonadicOp")) {
+        } else if (is(e).type("MonadicOp")) {
             var op = xml.element({_attr: {"op": e.op}});
             root.push({"monadic-op": op});
             w.expr(e.expr, "expression", op);
             op.close();
-        } else if (ast.is(e).type("InfixExpr")) {
+        } else if (is(e).type("InfixExpr")) {
             var inf = xml.element({_attr: {"arity": e.arity}});
             root.push({"infix-expression": inf});
             if (!_.isNull(e.expression)) {
@@ -180,9 +180,9 @@ function Writer(mod) {
                 w.expr(x, "param", inf);
             });
             inf.close();
-        } else if (ast.is(e).type("WildcardExpr")) {
+        } else if (is(e).type("WildcardExpr")) {
             root.push({"wildcard-expression": {}});
-        } else if (ast.is(e).type("CastExpr")) {
+        } else if (is(e).type("CastExpr")) {
             w.expr(e.expression, "cast-expression", root);
         } else {
             throw new Error("unexpected expression " + e.constructor.name);
@@ -213,13 +213,13 @@ function Writer(mod) {
     };
 
     w.stmt = function (s, root) {
-        if(ast.is(s).type("Assign")) {
+        if (is(s).type("Assign")) {
             var ass = xml.element();
             root.push({"assign": ass});
             w.expr(s.expression, "expression", ass);
             w.sel(s.selector, ass);
             ass.close();
-        } else if(ast.is(s).type("Call")) {
+        } else if (is(s).type("Call")) {
             var call = xml.element();
             root.push({"call": call});
             if (!_.isNull(s.expression)) {
@@ -230,7 +230,7 @@ function Writer(mod) {
                 throw new Error("error in call");
             }
             call.close();
-        } else if (ast.is(s).type("Conditional")) {
+        } else if (is(s).type("Conditional")) {
             var cond = xml.element();
             root.push({"if": cond});
             s.branches.forEach(br => {
@@ -245,19 +245,19 @@ function Writer(mod) {
                 els.close();
             }
             cond.close();
-        } else if (ast.is(s).type("Cycle")) {
+        } else if (is(s).type("Cycle")) {
             var cond = xml.element();
             root.push({"while": cond});
             s.branches.forEach(br => {
                 w.branch(br, cond);
             });
             cond.close();
-        } else if (ast.is(s).type("InvCycle")) {
+        } else if (is(s).type("InvCycle")) {
             var cond = xml.element();
             root.push({"repeat": cond});
             w.branch(s.value, cond);
             cond.close();
-        } else if (ast.is(s).type("Choose")) {
+        } else if (is(s).type("Choose")) {
             var attrs = {};
             attrs["type"] = s.typetest ? "typetest" : "exprtest";
             var ch = xml.element({_attr: attrs});
@@ -271,7 +271,7 @@ function Writer(mod) {
     };
 
     w.variable = function (o, root) {
-        if (ast.is(o).type("Variable")) {
+        if (is(o).type("Variable")) {
             const attrs = {name: o.name, type: o.type.name};
             if (_.isObject(o.param)) {
                 attrs["param"] = o.param.type;
@@ -284,7 +284,7 @@ function Writer(mod) {
                 attrs["id"] = o.type.id;
             }
             root.push({"variable": {_attr: attrs}});
-        } else if (ast.is(o).type("Constant")) {
+        } else if (is(o).type("Constant")) {
             const attrs = {name: o.name};
             if (!_.isEmpty(o.modifier)) {
                 attrs["modifier"] = o.modifier;

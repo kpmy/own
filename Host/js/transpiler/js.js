@@ -70,9 +70,9 @@ function Builder(mod) {
 
     b.variable = function (v, scope) {
         var sc = null;
-        if(ast.is(scope).type("Module")) {
+        if (is(scope).type("Module")) {
             sc = "mod.";
-        }else if (ast.is(scope).type("Block")){
+        } else if (is(scope).type("Block")) {
             sc = "var ";
         } else {
             throw new Error(`unknown scope ${scope.constructor.name}`);
@@ -94,9 +94,9 @@ function Builder(mod) {
 
     b.consts = function (c, scope) {
         var sc = null;
-        if (ast.is(scope).type("Module")) {
+        if (is(scope).type("Module")) {
             sc = "mod.";
-        } else if (ast.is(scope).type("Block")) {
+        } else if (is(scope).type("Block")) {
             sc = "var ";
         } else {
             throw new Error(`unknown scope ${scope.constructor.name}`);
@@ -147,15 +147,15 @@ function Builder(mod) {
             var eb = [];
             Array.from(s.inside)
                 .forEach(e => {
-                    if(ast.is(e).type("DerefExpr")) {
+                    if (is(e).type("DerefExpr")) {
                         flush(eb);
                         deref();
-                    } else if (ast.is(e).type("DotExpr")) {
+                    } else if (is(e).type("DotExpr")) {
                         flush(eb);
                         if (!_.isNull(eb.value)) {
                             select([ast.expr().constant(types.ATOM, e.value)]);
                         }
-                    } else if (ast.is(e).type("CastExpr")) {
+                    } else if (is(e).type("CastExpr")) {
                         flush(eb);
                         cast(e.expression);
                     } else {
@@ -183,7 +183,7 @@ function Builder(mod) {
                 if (typeof p == "string") { //temporary
                     b.write(p);
                     valueParam = false;
-                } else if (ast.is(p.expression).type("SelectExpr")) {
+                } else if (is(p.expression).type("SelectExpr")) {
                     if(!_.isEqual(mod.name, p.expression.selector.module)){
                         var imp = mod.thisImport(p.expression.selector.module);
                         var o = imp.def.objects[p.expression.selector.name];
@@ -195,7 +195,7 @@ function Builder(mod) {
             } else if (_.isUndefined(block)){
                 if (typeof p == "string") { //temporary
                     b.write(p);
-                } else if (ast.is(p).type("SelectExpr")) {
+                } else if (is(p).type("SelectExpr")) {
                     b.sel(p.selector);
                 } else {
                     b.expr(p);
@@ -211,7 +211,7 @@ function Builder(mod) {
 
     b.expr = function (e) {
         b.write("(");
-        if(ast.is(e).type("ConstExpr")) {
+        if (is(e).type("ConstExpr")) {
             if (_.isEqual(e.type.name, "MAP")) {
                 b.write(`new rts.Value("${e.type.name}", [`);
                 Array.from(e.value)
@@ -251,7 +251,7 @@ function Builder(mod) {
                 }
             } else if (_.isEqual(e.type.name, "TYPE")) {
                 b.write(`new rts.Value("${e.type.name}", `);
-                if (ast.is(e.value).type("Type")) {
+                if (is(e.value).type("Type")) {
                     b.write(`types.find("${e.value.name}")`);
                 } else {
                     b.tpl(e.value);
@@ -277,9 +277,9 @@ function Builder(mod) {
                     b.write(`new rts.Value("${e.type.name}", ${v})`);
                 }
             }
-        } else if (ast.is(e).type("WildcardExpr")) {
+        } else if (is(e).type("WildcardExpr")) {
             b.write("true");
-        } else if (ast.is(e).type("CallExpr")) {
+        } else if (is(e).type("CallExpr")) {
             var m = "mod";
             var block = null;
             if (!_.isEqual(mod.name, e.module)) {
@@ -293,11 +293,11 @@ function Builder(mod) {
             b.write(`${m}.$${e.name}(`);
             b.params(e.params, block);
             b.write(`)`);
-        } else if (ast.is(e).type("SelectExpr")) {
+        } else if (is(e).type("SelectExpr")) {
             b.write("rts.copyOf(");
             b.sel(e.selector);
             b.write(".value())");
-        } else if (ast.is(e).type("DyadicOp")) {
+        } else if (is(e).type("DyadicOp")) {
             b.write("rts.math.dop(");
             b.write("function(){return ");
             b.expr(e.left);
@@ -307,13 +307,13 @@ function Builder(mod) {
             b.expr(e.right);
             b.write("}");
             b.write(")");
-        } else if (ast.is(e).type("MonadicOp")) {
+        } else if (is(e).type("MonadicOp")) {
             b.write(`rts.math.mop("${e.op}", `);
             b.write("function(){return ");
             b.expr(e.expr);
             b.write("}");
             b.write(")")
-        } else if (ast.is(e).type("InfixExpr")) {
+        } else if (is(e).type("InfixExpr")) {
             b.write(`function(){ `);
             if (!_.isNull(e.expression)) {
                 var m = "mod";
@@ -381,12 +381,12 @@ function Builder(mod) {
     };
 
     b.stmt = function (s) {
-        if(ast.is(s).type("Assign")) {
+        if (is(s).type("Assign")) {
             b.sel(s.selector);
             b.write(".value(");
             b.expr(s.expression);
             b.write(")");
-        } else if (ast.is(s).type("Call")) {
+        } else if (is(s).type("Call")) {
             if (!_.isNull(s.expression)) {
                 b.expr(s.expression);
             } else if (!_.isNull(s.selector)) {
@@ -399,7 +399,7 @@ function Builder(mod) {
             } else {
                 throw new Error("wrong call");
             }
-        } else if (ast.is(s).type("Conditional")) {
+        } else if (is(s).type("Conditional")) {
             s.branches.forEach((br, i, $) => {
                 if (i > 0) b.write(" else ");
                 b.write(`if(rts.getNative("boolean", `);
@@ -419,7 +419,7 @@ function Builder(mod) {
                 });
                 b.write(`}`)
             }
-        } else if (ast.is(s).type("Cycle")) {
+        } else if (is(s).type("Cycle")) {
             var cond = "cond" + b.nextInt();
             b.ln(`for (var ${cond} = true; ${cond}; ){`);
             s.branches.forEach((br, i, $) => {
@@ -436,7 +436,7 @@ function Builder(mod) {
             b.write(`else { `);
             b.write(`${cond} = false; }`);
             b.write(`}`);
-        } else if (ast.is(s).type("InvCycle")) {
+        } else if (is(s).type("InvCycle")) {
             var cond = "cond" + b.nextInt();
             b.ln(`for (var ${cond} = false; !${cond}; ){`);
             s.value.sequence.forEach(s => {
@@ -446,7 +446,7 @@ function Builder(mod) {
             b.write(`${cond} = rts.getNative("boolean", `);
             b.expr(s.value.condition);
             b.write(`)}`);
-        } else if (ast.is(s).type("Choose")) {
+        } else if (is(s).type("Choose")) {
             var cond = null;
             if (s.typetest || s.expression.length == 1) {
                 cond = "cond" + b.nextInt();
@@ -474,7 +474,7 @@ function Builder(mod) {
                         b.write(`${cond}.isValueEqual(`);
                     } else if (s.expression.length > 1) {
                         if (i > 0) b.write(" && ");
-                        if (!ast.is(c).type("WildcardExpr")) {
+                        if (!is(c).type("WildcardExpr")) {
                             b.write(`${cond[i]}.isValueEqual(`);
                         } else {
                             b.write("(")
@@ -513,7 +513,7 @@ function Builder(mod) {
         var par = [];
         for(v in block.objects) {
             var o = block.objects[v];
-            if(ast.is(o).type("Variable")){
+            if (is(o).type("Variable")) {
                 b.variable(o, block);
                 if(_.isObject(o.param)){
                     par.push(o);
@@ -582,10 +582,10 @@ function Builder(mod) {
 
         for(v in mod.objects) {
             var o = mod.objects[v];
-            if (ast.is(o).type("Variable")) {
+            if (is(o).type("Variable")) {
                 b.variable(o, mod);
                 b.ln();
-            } else if (ast.is(o).type("Constant")) {
+            } else if (is(o).type("Constant")) {
                 b.consts(o, mod);
                 b.ln();
             } else {

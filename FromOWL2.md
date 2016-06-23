@@ -51,9 +51,9 @@
 Для унификации используемых конструкций в языке `own/l` нужно представить описание типа `BYTE` в виде иерархического дерева классов языка `ot`.
 
     TYPE :: SubClassOf: INTEGER;
-      SubClassOf: hasIntValue exactly 1
-              and hasIntValue some INTEGER: -128 127;;
-    ; -> BYTE
+        SubClassOf: hasIntValue exactly 1
+                AND hasIntValue some INTEGER: -128 127;;
+      ; -> BYTE
 
 ## Ссылки
 

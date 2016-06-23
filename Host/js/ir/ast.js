@@ -353,14 +353,4 @@ module.exports.formal = function () {
     return new FormalParam();
 };
 
-let is = function (o) {
-    return {
-        type: function (t) {
-            return _.isEqual(o.constructor.name, t);
-        }
-    }
-};
-
-module.exports.is = is;
-
 

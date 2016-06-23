@@ -1,5 +1,20 @@
 /* Created by kpmy on 11.06.2016 */
 global.rerequire = require("require-new");
+global.is = function (x) {
+    let xn = x.constructor.name;
+    return {
+        type: function (t) {
+            if (typeof t == "string")
+                return t == xn;
+            else if (typeof t == "function") {
+                return t.name == xn;
+            } else {
+                throw new Error(`unsupported ${t}`);
+            }
+        }
+    }
+};
+
 let root = __dirname + "/Own";
 let own = require("./Host")(root);
 

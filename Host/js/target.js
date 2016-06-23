@@ -128,7 +128,8 @@ function Target(name, sc) {
 
     t.registerType = function (t) {
         should.exist(t.value);
-        owl2.build(t.value);
+        var cls = owl2.build(t.value);
+        console.dir(cls, {depth: null});
     }
 }
 
