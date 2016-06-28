@@ -9,7 +9,6 @@ function UnitTest12(rts) {
     mod.$z = new rts.Obj(new rts.Type("INTEGER"));
     mod.$t = new rts.Obj(new rts.Type("TYPE"));
     mod.start = function () {
-        console.log('dynamic load Test12');
         if (rts.getNative("boolean", (rts.math.dop(function () {
                 return (rts.copyOf(mod.$x.value()))
             }, "IS", function () {
@@ -29,7 +28,7 @@ function UnitTest12(rts) {
                 return (rts.copyOf(mod.$t.value()))
             })))) {
             mod.$x.value((new rts.Value("INTEGER", 2)));
-        }
+}
         var cond2 = new rts.Value("ANY", (rts.copyOf(mod.$x.value())));
         if (cond2.isValueEqual((new rts.Value("INTEGER", 1)))) {
             mod.$y.value((new rts.Value("INTEGER", 3)));

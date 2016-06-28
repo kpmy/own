@@ -9,8 +9,6 @@ function UnitTest13(rts) {
     mod.$q = new rts.Obj(new rts.Type("POINTER"));
 
     mod.$Do0 = function () {
-        console.log("enter Test13.Do0");
-        console.dir(arguments, {depth: null});
         var $x = new rts.Obj(new rts.Type("INTEGER"));
         var $y = new rts.Obj(new rts.Type("INTEGER"));
         $x.value(arguments[0]);
@@ -36,10 +34,8 @@ function UnitTest13(rts) {
             }, ">", function () {
                 return (new rts.Value("INTEGER", 0))
             })))) throw new Error("postcondition 0 violated");
-        console.log("leave Test13.Do0");
 };
     mod.start = function () {
-        console.log('dynamic load Test13');
         mod.$z.value((new rts.Value("INTEGER", 1)));
         (mod.$Do0((new rts.Value("INTEGER", 1))));
         (mod.Import$std.$NEW(mod.$p));
@@ -49,10 +45,10 @@ function UnitTest13(rts) {
                 return (new rts.Value("POINTER", {adr: 0}))
             })))) {
             mod.$p.value((new rts.Value("INTEGER", 43)));
-        }
+}
         mod.$q.value((rts.copyOf(mod.$p.value())));
         mod.$p.value((new rts.Value("POINTER", {adr: 0})));
-    };
+};
 }
 module.exports = function (rts) {
     return new UnitTest13(rts)
