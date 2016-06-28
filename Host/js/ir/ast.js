@@ -2,7 +2,7 @@
 const _ = require('underscore');
 const should = require('should');
 
-const types = rerequire("./types.js")();
+const types = require("./types.js")();
 
 function Selector() {
     this.module = null;

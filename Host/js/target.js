@@ -2,9 +2,9 @@
 const _ = require("underscore");
 const should = require("should");
 
-const ast = rerequire("./ir/ast.js");
-const def = rerequire("./ir/def.js");
-const owl2 = rerequire("./owl2");
+const ast = require("./ir/ast.js");
+const def = require("./ir/def.js");
+const owl2 = require("./owl2");
 
 function Block() {
     this.imports = [];
@@ -34,11 +34,12 @@ function Block() {
 }
 
 function Target(name, sc) {
-    const t = this;
+    let t = this;
     this.mod = ast.mod();
     this.mod.name = name;
     this._bstack = [];
     this._resolvers = [];
+    t.userTypes = {};
 
     t.std = function () {
         var std = ast.imp();
@@ -126,10 +127,12 @@ function Target(name, sc) {
         return true;
     };
 
-    t.registerType = function (t) {
-        should.exist(t.value);
-        var cls = owl2.build(t.value);
-        console.dir(cls, {depth: null});
+    t.registerType = function (ut) {
+        should.exist(ut.value);
+        var cls = owl2.build(ut.value);
+        cls.IRI = t.mod.name + "." + ut.id;
+        ut.class = cls;
+        t.userTypes[ut.id] = ut;
     }
 }
 

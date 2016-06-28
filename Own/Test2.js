@@ -20,8 +20,6 @@ mod.$call = new rts.Obj(new rts.Type("BLOCK"));
 mod.$callList = new rts.Obj(new rts.Type("LIST"));
 
 mod.$Do0 = function(){
-console.log("enter Test2.Do0");
-console.dir(arguments, {depth: null});
 var $x = new rts.Obj(new rts.Type("INTEGER"));
 if(arguments[0] !== undefined){
 if(!rts.isValue(arguments[0])){
@@ -32,10 +30,8 @@ $x.value(arguments[0]);
 }
 
 $x.value((new rts.Value("INTEGER", 1933)));
-console.log("leave Test2.Do0");
 };
 mod.start = function(){
-console.log('dynamic load Test2'); 
 mod.$bool.value((new rts.Value("BOOLEAN", true)));
 mod.$int.value((new rts.Value("INTEGER", 140)));
 mod.$any.value((rts.copyOf(mod.$int.value())));
@@ -72,5 +68,5 @@ mod.$callList.value((new rts.Value("LIST", [(rts.copyOf(mod.$proc.value())),
 (new rts.Value("BLOCK", mod.$Do0))])));
 mod.$proc.value((new rts.Value("ANY", global.NONE)));
 };
-};
+}
 module.exports = function(rts){return new UnitTest2 (rts)};

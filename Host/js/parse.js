@@ -2,15 +2,15 @@
 const should = require("should");
 const _ = require("underscore");
 
-const ast = rerequire("./ir/ast.js");
-const tpl = rerequire("./ir/tpl.js");
-const types = rerequire("./ir/types.js")();
-const target = rerequire("./target.js");
+const ast = require("./ir/ast.js");
+const tpl = require("./ir/tpl.js");
+const types = require("./ir/types.js")();
+const target = require("./target.js");
 
 function Parser(sc, resolver) {
     const p = this; //use with care within closures...
 
-    p["pr"] = rerequire("./help.js")(sc);
+    p["pr"] = require("./help.js")(sc);
     p["sc"] = sc;
     p["tgt"] = null;
     p["resolvers"] = [];

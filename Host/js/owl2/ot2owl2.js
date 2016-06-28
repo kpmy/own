@@ -2,15 +2,19 @@
 let _ = require("underscore");
 let should = require("should");
 
-let tpl = rerequire("../ir/tpl.js").struct();
-let types = rerequire("../ir/types.js")();
-let std = rerequire("./std.js")();
-let reasoner = rerequire("./reasoner.js");
+let tpl = require("../ir/tpl.js").struct();
+let types = require("../ir/types.js")();
+let builtin = require("./std.js")();
+let reasoner = require("./reasoner.js");
 
-let Class = rerequire("./class.js");
-let ObjectProperty = rerequire("./oprop.js");
-let DataProperty = rerequire("./dprop.js");
+let Class = require("./class.js");
+let ObjectProperty = require("./oprop.js");
+let DataProperty = require("./dprop.js");
 
+let ClassPredicate = require("./predicate.js").ClassPredicate;
+let DataRangePredicate = require("./predicate.js").DataRangePredicate;
+let DataCardinalityPredicate = require("./predicate.js").DataCardinalityPredicate;
+let And = require("./predicate.js").And;
 
 function Builder(ot) {
     const b = this;
@@ -27,12 +31,12 @@ function Builder(ot) {
 
         r.class = function () {
             should.exist(r.sym, "object expected");
-            return _.has(std.classes, r.sym.qid.cls) ? std.classes[r.sym.qid.cls] : null;
+            return _.has(builtin.classes, r.sym.qid.cls) ? builtin.classes[r.sym.qid.cls] : null;
         };
 
         r.prop = function () {
             should.exist(r.sym, "prop expected");
-            return _.has(std.props, r.sym.qid.cls) ? std.props[r.sym.qid.cls] : null;
+            return _.has(builtin.props, r.sym.qid.cls) ? builtin.props[r.sym.qid.cls] : null;
         };
 
         r.next = function () {
@@ -58,9 +62,7 @@ function Builder(ot) {
                     case types.INTEGER.name:
                         should.ok(_.isEqual(lv.type.name, types.INTEGER.name));
                         should.ok(_.isEqual(rv.type.name, types.INTEGER.name));
-                        ret = function () {
-                            reasoner.datarange(types.INTEGER, lv.value, rv.value);
-                        };
+                        ret = new DataRangePredicate(types.INTEGER, lv.value, rv.value);
                         break;
                     default:
                         throw new Error(`unknown datatype`);
@@ -82,9 +84,7 @@ function Builder(ot) {
         should.ok(r.class(), "class ident expected");
         var cls = r.class();
         r.next();
-        return function () {
-            reasoner.refer(cls);
-        };
+        return new ClassPredicate(cls);
     };
 
     b.dprop = function (r) {
@@ -96,9 +96,7 @@ function Builder(ot) {
                 var card = r.next().sym;
                 should.ok(tpl.isValue(card) && _.isEqual(card.type.name, types.INTEGER.name));
                 r.next();
-                return function () {
-                    reasoner.cardinal(rs, card.value);
-                };
+                return new DataCardinalityPredicate(rs, card.value);
                 break;
             case "some":
                 r.next();
@@ -143,9 +141,7 @@ function Builder(ot) {
                 r.next();
                 cond.push(b.primary(r));
             }
-            ret = function () {
-                reasoner.and(cond);
-            }
+            ret = new And(...cond);
         }
         return ret;
     };
@@ -156,13 +152,13 @@ function Builder(ot) {
         return cond;
     };
 
-    b.run = function (clazz, root) {
+    b.run = function (cls, root) {
         root.children.forEach(c => {
             switch (c.qid.cls) {
                 case "SubClassOf":
                     var fn = b.or(new Runner(c));
                     should.exist(fn);
-                    clazz.description.push(fn);
+                    cls.description.push(fn);
                     break;
                 default:
                     throw new Error(`unknown class ${c.qid.cls}`);
@@ -175,7 +171,7 @@ function Builder(ot) {
         return classMap["$"];
     };
 
-    classMap["$"] = new Class();
+    classMap["$"] = new Class("$");
 }
 
 function build(ot) {

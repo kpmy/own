@@ -2,15 +2,15 @@
  * Created by petry_000 on 23.06.2016.
  */
 
-let Class = rerequire("./class.js");
-let ObjectProperty = rerequire("./oprop.js");
-let DataProperty = rerequire("./dprop.js");
+let Class = require("./class.js");
+let ObjectProperty = require("./oprop.js");
+let DataProperty = require("./dprop.js");
 
-function BuiltIn() {
+function Builtin() {
     let s = this;
 
     s.classes = {
-        "INTEGER": new Class()
+        "INTEGER": new Class("INTEGER")
     };
 
     s.props = {
@@ -19,5 +19,5 @@ function BuiltIn() {
 }
 
 module.exports = function () {
-    return new BuiltIn();
+    return new Builtin();
 };

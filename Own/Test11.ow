@@ -2,7 +2,7 @@ UNIT Test11
     CONST
         "Hi" -> hi
         TYPE::
-            BASE: INTEGER;
+            SubClassOf: INTEGER;
         ; -> WEIGHT
 
     VAR w WEIGHT; x INTEGER;

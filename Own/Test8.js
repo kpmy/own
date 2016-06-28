@@ -13,8 +13,6 @@ mod.$ch = new rts.Obj(new rts.Type("INTEGER"));
 mod.$inf = new rts.Obj(new rts.Type("BLOCK"));
 
 mod.$Wo = function(){
-console.log("enter Test8.Wo");
-console.dir(arguments, {depth: null});
 var $x = new rts.Obj(new rts.Type("INTEGER"));
 var $f = new rts.Obj(new rts.Type("INTEGER"));
 if(arguments[0] !== undefined){
@@ -27,12 +25,9 @@ $f.value(arguments[0]);
 
 $x.value(arguments[1]);
 $f.value((rts.copyOf($x.value())));
-console.log("leave Test8.Wo");
 };
 
 mod.$Wo2 = function(){
-console.log("enter Test8.Wo2");
-console.dir(arguments, {depth: null});
 var $x = new rts.Obj(new rts.Type("INTEGER"));
 var $y = new rts.Obj(new rts.Type("INTEGER"));
 var $z = new rts.Obj(new rts.Type("INTEGER"));
@@ -49,10 +44,8 @@ $f.value(arguments[1]);
 $y.value(arguments[2]);
 $z.value(arguments[3]);
 $f.value((rts.math.dop(function(){return (rts.math.dop(function(){return (rts.copyOf($x.value()))}, "+", function(){return (rts.copyOf($y.value()))}))}, "+", function(){return (rts.copyOf($z.value()))})));
-console.log("leave Test8.Wo2");
 };
 mod.start = function(){
-console.log('dynamic load Test8'); 
 mod.$s.value((new rts.Value("STRING", `SGVsbG8=`, "base64")));
 mod.$s.value((rts.math.dop(function(){return (rts.math.dop(function(){return (rts.copyOf(mod.$s.value()))}, "+", function(){return (new rts.Value("CHAR", 44, "charCode"))}))}, "+", function(){return (new rts.Value("CHAR", 32, "charCode"))})));
 (mod.ImportLog.$Print((rts.math.dop(function(){return (rts.math.dop(function(){return (rts.copyOf(mod.$s.value()))}, "+", function(){return (new rts.Value("STRING", `V29ybGQ=`, "base64"))}))}, "+", function(){return (rts.math.dop(function(){return (new rts.Value("CHAR", 33, "charCode"))}, "+", function(){return (new rts.Value("CHAR", 13, "charCode"))}))}))));
@@ -78,5 +71,5 @@ mod.$ch.value((function(){ var tmp4 = new rts.Obj(new rts.Type("INTEGER"));
 (new rts.Value("CHAR", 120, "charCode"))));
 return tmp4.value();}()));
 };
-};
+}
 module.exports = function(rts){return new UnitTest8 (rts)};

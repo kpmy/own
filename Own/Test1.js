@@ -14,8 +14,6 @@ mod.$ret = new rts.Obj(new rts.Type("ANY"));
 mod.$m = new rts.Obj(new rts.Type("ANY"));
 
 mod.$Do = function(){
-console.log("enter Test1.Do");
-console.dir(arguments, {depth: null});
 var $i = new rts.Obj(new rts.Type("ANY"));
 var $j = new rts.Obj(new rts.Type("ANY"));
 var $k = new rts.Obj(new rts.Type("ANY"));
@@ -24,12 +22,9 @@ $i.value((new rts.Value("INTEGER", 10)));
 (mod.ImportTest0.$Do());
 $j.value((rts.copyOf(mod.ImportTest0.$j.value())));
 $k.value((rts.copyOf($j.value())));
-console.log("leave Test1.Do");
 };
 
 mod.$Do0 = function(){
-console.log("enter Test1.Do0");
-console.dir(arguments, {depth: null});
 var $a = new rts.Obj(new rts.Type("ANY"));
 var $i = new rts.Obj(new rts.Type("INTEGER"));
 var $b = new rts.Obj(new rts.Type("BOOLEAN"));
@@ -38,12 +33,9 @@ $i.value((new rts.Value("INTEGER", 1945)));
 $b.value((new rts.Value("BOOLEAN", true)));
 mod.$z.value((new rts.Value("ANY", global.NONE)));
 (mod.$Do1());
-console.log("leave Test1.Do0");
 };
 
 mod.$Do1 = function(){
-console.log("enter Test1.Do1");
-console.dir(arguments, {depth: null});
 var $s = new rts.Obj(new rts.Type("INTEGER"));
 var $f = new rts.Obj(new rts.Type("INTEGER"));
 (mod.$Do2((new rts.Value("INTEGER", 15)),
@@ -53,12 +45,9 @@ $s));
 (rts.copyOf(mod.$m.value()))));
 (mod.ImportTest0.$Do0(mod.$m));
 (mod.ImportTest0.$Do0(mod.ImportTest0.$j));
-console.log("leave Test1.Do1");
 };
 
 mod.$Do2 = function(){
-console.log("enter Test1.Do2");
-console.dir(arguments, {depth: null});
 var $i = new rts.Obj(new rts.Type("INTEGER"));
 var $j = new rts.Obj(new rts.Type("INTEGER"));
 var $k = new rts.Obj(new rts.Type("INTEGER"));
@@ -73,10 +62,8 @@ $j.value(arguments[1]);
 
 $j.value((new rts.Value("INTEGER", 443)));
 mod.$ret.value((rts.copyOf($j.value())));
-console.log("leave Test1.Do2");
 };
 mod.start = function(){
-console.log('dynamic load Test1'); 
 mod.$x.value((new rts.Value("INTEGER", 1984)));
 (mod.$Do());
 mod.ImportTest0.$i.value((new rts.Value("INTEGER", 1)));
@@ -88,5 +75,5 @@ mod.$w.value((rts.copyOf(mod.ImportTest0.$j.value())));
 (new rts.Value("INTEGER", 2)),
 (new rts.Value("INTEGER", 3))));
 };
-};
+}
 module.exports = function(rts){return new UnitTest1 (rts)};

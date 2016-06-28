@@ -8,7 +8,7 @@ mod.$Magenta = new rts.Const((new rts.Value("ATOM", "Magenta")));
 mod.$html = new rts.Const((new rts.Value("ATOM", function(){var t = new tpl.Leaf();
 t.qid = new tpl.Qualident(undefined, "html", undefined);
 t.clazz = new tpl.Clazz(undefined, "html");
-t.unique = false;
+    t.unique = true;
 t.push(function(){var t = new tpl.Leaf();
 t.qid = new tpl.Qualident(undefined, "body", undefined);
 t.clazz = new tpl.Clazz(undefined, "body");
@@ -48,7 +48,6 @@ mod.$s = new rts.Obj(new rts.Type("SET"));
 mod.$a = new rts.Obj(new rts.Type("ATOM"));
 mod.$b = new rts.Obj(new rts.Type("ATOM"));
 mod.start = function(){
-console.log('dynamic load Test10'); 
 mod.$s.value((new rts.Value("SET", [(new rts.Value("INTEGER", 1)),
 (new rts.Value("INTEGER", 2)),
 (new rts.Value("INTEGER", 3)),
@@ -60,5 +59,5 @@ return tmp1.value();}()));
 mod.$a.value((new rts.Value("ATOM", "BurninChrome")));
 mod.$b.value((rts.copyOf(mod.$Magenta.value())));
 };
-};
+}
 module.exports = function(rts){return new UnitTest10 (rts)};

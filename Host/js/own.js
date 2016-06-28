@@ -9,13 +9,13 @@ let should = require("should");
 function resolveDef(root) {
     return function (name) {
         if (_.isEqual(name, "$std")) {
-            return rerequire("./ir/def.js").std();
+            return require("./ir/def.js").std();
         } else {
             var dn = root + "/" + name + ".od";
             var dd = fs.openSync(dn, "r");
             var def = fs.readFileSync(dd, "utf8");
             fs.closeSync(dd);
-            return rerequire("./ir/def.js").read(def);
+            return require("./ir/def.js").read(def);
         }
     };
 }
@@ -30,27 +30,27 @@ function Own(root) {
         var sd = fs.openSync(sn, "r");
         var source = fs.readFileSync(sd, "utf8");
         fs.closeSync(sd);
-        var sc = rerequire("./scan.js")(source);
-        var p = rerequire("./parse.js")(sc, resolveDef(root));
+        var sc = require("./scan.js")(source);
+        var p = require("./parse.js")(sc, resolveDef(root));
         var mod = p.mod();
         should.exist(mod);
         //console.dir(mod, {depth: null});
 
-        var def = rerequire("./ir/def.js").write(mod);
+        var def = require("./ir/def.js").write(mod);
         var dd = fs.openSync(root + "/" + name + ".od", "w");
         fs.writeFileSync(dd, def, "utf8");
-        rerequire("./ir/def.js").read(def);
+        require("./ir/def.js").read(def);
         fs.closeSync(dd);
 
         //для вдумчивого дебага
         var ad = fs.openSync(root + "/" + name + ".ox", "w");
-        rerequire("./ir/xml.js").writer(mod, fs.createWriteStream(".", {
+        require("./ir/xml.js").writer(mod, fs.createWriteStream(".", {
             defaultEncoding: 'utf8',
             autoClose: true,
             "fd": ad
         }));
 
-        var js = rerequire("./transpiler/js.js")(mod, resolveDef(root));
+        var js = require("./transpiler/js.js")(mod, resolveDef(root));
         var jd = fs.openSync(root + "/" + name + ".js", "w");
         fs.writeFileSync(jd, js, "utf8");
         fs.closeSync(jd);

@@ -12,8 +12,6 @@ mod.$x = new rts.Obj(new rts.Type("ANY"));
 mod.$list = new rts.Obj(new rts.Type("LIST"));
 
 mod.$Init = function(){
-console.log("enter Test.Init");
-console.dir(arguments, {depth: null});
 mod.$i.value((new rts.Value("INTEGER", 32)));
 mod.$j.value((new rts.Value("INTEGER", 232)));
 mod.$j.value((rts.copyOf(mod.$i.value())));
@@ -35,12 +33,10 @@ mod.$list.value((new rts.Value("LIST", [(new rts.Value("LIST", [(new rts.Value("
 (new rts.Value("LIST", [(new rts.Value("INTEGER", 4)),
 (new rts.Value("INTEGER", 5)),
 (new rts.Value("INTEGER", 6))]))])));
-mod.$j.value((rts.copyOf(mod.$list.select((new rts.Value("INTEGER", 1))).deref().select((new rts.Value("INTEGER", 2))).deref().value())));
-console.log("leave Test.Init");
+    mod.$j.value((rts.copyOf(mod.$list.select((new rts.Value("INTEGER", 1))).deref().select((new rts.Value("ATOM", "null"))).select((new rts.Value("INTEGER", 2))).deref().value())));
 };
 mod.start = function(){
-console.log('dynamic load Test'); 
 (mod.$Init());
 };
-};
+}
 module.exports = function(rts){return new UnitTest (rts)};

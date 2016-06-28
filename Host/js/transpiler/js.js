@@ -4,9 +4,9 @@
 const should = require("should");
 const _ = require('underscore');
 
-const ast = rerequire("../ir/ast.js");
-const tpl = rerequire("../ir/tpl.js").struct();
-const types = rerequire("../ir/types.js")();
+const ast = require("../ir/ast.js");
+const tpl = require("../ir/tpl.js").struct();
+const types = require("../ir/types.js")();
 
 function Builder(mod) {
     const b = this;

@@ -23,7 +23,7 @@ own.compile(name);
 own.rts.load("Core");
 //own.rts.load("Init");
 own.rts.load(name);
-//own.rts.dump();
+own.rts.dump();
 
 function build() {
     Array.from(arguments).forEach(x => {
@@ -32,6 +32,6 @@ function build() {
     });
 }
 
-//build("Simple", "Log", "Test0", "Test1", "Test2", "Test3", "Test4", "Test5", "Test6", "Test7", "Test8", "Test9", "Test10", "Test11", "Test12", "Test13");
+//build("Simple", "Log", "Test0", "Test1", "Test2", "Test3", "Test4", "Test5", "Test6", "Test7", "Test8", "Test9", "Test10", "Test11", "Test12", "Test13", "Test14", "Test15");
 //build("Core", "Log", "Init", "Demo0");
 //process.exit();

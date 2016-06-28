@@ -139,6 +139,7 @@ function Types() {
         var ret = new Type("USER");
         ret.id = id;
         ret.value = null;
+        ret.class = null;
         return ret;
     }
 }

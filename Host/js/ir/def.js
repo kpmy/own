@@ -1,7 +1,7 @@
 /* Created by kpmy on 13.05.2016 */
 const should = require("should");
 const _ = require('underscore');
-const ast = rerequire("./ast.js");
+const ast = require("./ast.js");
 
 function Writer(mod) {
 

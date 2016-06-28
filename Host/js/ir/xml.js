@@ -3,9 +3,9 @@ const should = require("should");
 const xml = require("xml");
 const _ = require('underscore');
 
-const ast = rerequire("./ast.js");
-const tpl = rerequire("./tpl.js").struct();
-const types = rerequire("./types.js")();
+const ast = require("./ast.js");
+const tpl = require("./tpl.js").struct();
+const types = require("./types.js")();
 
 function Writer(mod) {
     const w = this;

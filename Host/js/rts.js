@@ -1,8 +1,10 @@
 /* Created by kpmy on 19.05.2016 */
 const should = require("should");
-const types = rerequire("./ir/types.js")();
 const _ = require("underscore");
-const tpl = rerequire("./ir/tpl.js").struct();
+
+const types = require("./ir/types.js")();
+const tpl = require("./ir/tpl.js").struct();
+const owl2 = require("./owl2");
 
 function Type(tn, id, value) {
     const t = this;
@@ -11,7 +13,10 @@ function Type(tn, id, value) {
         should.ok(value instanceof Value);
         should.ok(_.isEqual(value.type.name, "TYPE"));
         t.base = types.userType(id);
-        t.base.value = value.value;
+        //t.base.value = value.value;
+        t.base.class = owl2.build(value.value);
+        t.base.class.IRI = id;
+        t.base.type = null;
     } else {
         t.base = types.find(tn);
     }
@@ -71,23 +76,6 @@ function defaultValue(t) {
 function notImpl(){
     throw new Error("not implemented inside");
 }
-function Inside(){ //так как селектор не только на чтение но и на запись - проксируем кишки объекта через Inside
-    const i = this;
-
-    i.deeper = notImpl;
-
-    i.value = function () {
-        i.deeper().value(...arguments);
-    };
-
-    i.select = function () {
-        i.deeper().select(...arguments);
-    };
-
-    i.deref = function () {
-        i.deeper().deref(...arguments);
-    }
-}
 
 function Const(v) {
     const c = this;
@@ -101,7 +89,7 @@ function Const(v) {
 function Obj(t, cv) {
 
     function Local(t) {
-        this.type = t;
+        //this.type = t;
         this.value = defaultValue(t.base);
 
         this.set = function (v) {
@@ -372,8 +360,15 @@ function Obj(t, cv) {
             o.select = notImpl;
             break;
         case "USER":
+            var base = owl2.macro(t.base.class).getBaseClass();
+            should.exist(base);
+            t.base.type = new Type(base.IRI);
+            o.ref = new Obj(t.base.type, o.val);
+
             o.value = function (x) {
+                return o.ref.value(x);
             };
+
             o.call = notImpl;
             o.deref = notImpl;
             o.select = notImpl;
